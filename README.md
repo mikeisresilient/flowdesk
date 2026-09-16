@@ -1,250 +1,853 @@
 # FlowDesk
 
-A responsive project-management web application interface built with React, TypeScript, Tailwind CSS, and React Router.
+FlowDesk is a responsive full stack project management web application built with React, TypeScript, Express, PostgreSQL, Prisma, and Tailwind CSS.
 
-FlowDesk provides a polished multi-page frontend foundation with public and authenticated views, responsive dashboard experiences, reusable UI components, accessible interactions, protected routes, and a service-layer architecture prepared for secure backend integration.
+The application provides authenticated project and task management with persistent database storage, server side validation, session based authentication, protected API routes, and ownership checks.
 
 ## Internship Objective
 
-> **Responsive Web Application**  
-> Build the front-end foundation for a complete web application with public and authenticated views.  
-> **Outcome:** A responsive, accessible multi-page application interface ready for secure backend integration.
+### Task 1: Responsive Web Application
 
-FlowDesk was built to satisfy this frontend-focused requirement.
+Build the front end foundation for a complete web application with public and authenticated views.
+
+### Task 2: Full Stack Integration
+
+Connect the application interface to secure server side workflows and persistent data.
+
+Task 2 focuses on:
+
+- Authentication and sessions
+- Database backed CRUD
+- Server side validation
+- Safe frontend API requests
+- Ownership checks
+- Persistent data
+- Reproducible project setup
+
+---
 
 ## Features
 
 ### Public experience
+
 - Responsive landing page
 - Responsive navigation
 - Sign in
 - Create account
-- Forgot password
+- Forgot password interface
 - Responsive footer
-- Mobile navigation menu
+- Mobile navigation
 
-### Authenticated experience
-- Protected dashboard routes
-- Dashboard overview
-- Projects management interface
-- Tasks management interface
-- Calendar
-- Notifications
-- Settings
-- Responsive dashboard sidebar
-- Desktop dashboard header
-- Sign-out flow
+### Authentication
 
-### UX and accessibility
-- Mobile, tablet, laptop, desktop, and large-screen layouts
-- Keyboard-friendly interactive controls
-- Visible focus states
-- Accessible form labels
-- ARIA attributes for relevant interactive elements
+- User registration
+- User login
+- Server side credential validation
+- Argon2 password hashing
+- Database backed sessions
+- HttpOnly session cookies
+- Session expiration
+- Session restoration after page refresh
+- Logout
+- Protected frontend routes
+- Protected backend API routes
+
+### Projects
+
+- Create projects
+- View projects
+- View individual projects
+- Edit projects
+- Delete projects
+- Project status management
+- Progress tracking
+- Server side validation
+- Database persistence
+- User ownership enforcement
+
+### Tasks
+
+- Create tasks
+- View tasks
+- View individual tasks
+- Edit tasks
+- Delete tasks
+- Task status management
+- Task priority management
+- Due dates
+- Optional project assignment
+- Server side validation
+- Database persistence
+- User ownership enforcement
+- Project ownership validation when assigning tasks
+
+### Dashboard
+
+- Authenticated dashboard
+- Real project statistics
+- Real task statistics
+- Project progress
+- Task completion statistics
+- Recent projects
+- Recent activity
 - Loading states
 - Error states
 - Empty states
-- Custom accessible dropdown component
-- Responsive table/card transformations
-- 404 page
 
-### Frontend architecture
-- Reusable UI components
-- Layout components for public, authentication, and dashboard experiences
-- Centralized routing
-- Authentication context and hook separation
-- Protected route handling
-- API abstraction layer
-- Typed service modules for authentication, projects, and tasks
+### UX and accessibility
 
-## Technology Stack
+- Mobile responsive layouts
+- Tablet layouts
+- Laptop layouts
+- Desktop layouts
+- Large screen layouts
+- Keyboard friendly controls
+- Visible focus states
+- Accessible form labels
+- ARIA attributes where appropriate
+- Loading states
+- Error states
+- Empty states
+- Responsive tables and cards
+- Accessible custom dropdown
+- Responsive dashboard navigation
 
-- **React**
-- **TypeScript**
-- **Vite**
-- **Tailwind CSS**
-- **React Router**
-- **Lucide React**
+---
 
-## Routes
+# Technology Stack
 
-### Public
+## Frontend
 
-| Route | Description |
-|---|---|
-| `/` | Landing page |
-| `/login` | Sign-in page |
-| `/register` | Registration page |
-| `/forgot-password` | Password recovery page |
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router
+- Lucide React
 
-### Protected
-
-| Route | Description |
-|---|---|
-| `/dashboard` | Dashboard overview |
-| `/dashboard/projects` | Projects |
-| `/dashboard/tasks` | Tasks |
-| `/dashboard/calendar` | Calendar |
-| `/dashboard/notifications` | Notifications |
-| `/dashboard/settings` | Settings |
-
-### Fallback
-
-| Route | Description |
-|---|---|
-| `*` | Custom 404 page |
-
-## Getting Started
-
-### Requirements
+## Backend
 
 - Node.js
-- npm
+- Express
+- TypeScript
+- Zod
+- Argon2
+- Cookie Parser
+- Helmet
+- CORS
+- Express Rate Limit
 
-### Installation
+## Database
+
+- PostgreSQL
+- Neon PostgreSQL
+- Prisma ORM
+
+## Authentication
+
+- Database backed sessions
+- HttpOnly cookies
+- HMAC SHA-256 session token hashing
+- Argon2 password hashing
+
+---
+
+# Architecture
+
+FlowDesk uses a separated frontend and backend architecture.
+
+```text
+flowdesk/
+│
+├── src/                       # React frontend
+│   ├── components/
+│   ├── context/
+│   ├── hooks/
+│   ├── layouts/
+│   ├── pages/
+│   ├── routes/
+│   ├── services/
+│   ├── types/
+│   └── utils/
+│
+├── server/                    # Express backend
+│   ├── prisma/
+│   │   ├── migrations/
+│   │   └── schema.prisma
+│   │
+│   └── src/
+│       ├── config/
+│       ├── controllers/
+│       ├── middleware/
+│       ├── routes/
+│       ├── schemas/
+│       ├── services/
+│       ├── types/
+│       └── server.ts
+│
+└── README.md
+````
+
+The frontend communicates with the backend through a centralized API service.
+
+The backend is responsible for:
+
+1. Authentication
+2. Authorization
+3. Validation
+4. Database operations
+5. Ownership checks
+6. Session management
+
+---
+
+# Database Schema
+
+The PostgreSQL database contains the following main models:
+
+```text
+User
+Session
+Project
+Task
+Notification
+```
+
+### Relationships
+
+```text
+User
+ ├── Sessions
+ ├── Projects
+ ├── Tasks
+ └── Notifications
+
+Project
+ └── Tasks
+
+Task
+ └── optional Project
+```
+
+Projects and tasks contain an `ownerId` which is used by the backend to enforce ownership.
+
+---
+
+# Routes
+
+## Public routes
+
+| Route              | Description                 |
+| ------------------ | --------------------------- |
+| `/`                | Landing page                |
+| `/login`           | Sign in                     |
+| `/register`        | Create account              |
+| `/forgot-password` | Password recovery interface |
+
+## Protected frontend routes
+
+| Route                      | Description        |
+| -------------------------- | ------------------ |
+| `/dashboard`               | Dashboard overview |
+| `/dashboard/projects`      | Project management |
+| `/dashboard/tasks`         | Task management    |
+| `/dashboard/calendar`      | Calendar           |
+| `/dashboard/notifications` | Notifications      |
+| `/dashboard/settings`      | Account settings   |
+
+---
+
+# API Endpoints
+
+## Authentication
+
+```text
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+POST /api/auth/logout
+```
+
+## Projects
+
+```text
+POST   /api/projects
+GET    /api/projects
+GET    /api/projects/:id
+PATCH  /api/projects/:id
+DELETE /api/projects/:id
+```
+
+## Tasks
+
+```text
+POST   /api/tasks
+GET    /api/tasks
+GET    /api/tasks/:id
+PATCH  /api/tasks/:id
+DELETE /api/tasks/:id
+```
+
+## Health
+
+```text
+GET /api/health
+```
+
+---
+
+# Security
+
+Security is implemented at the backend boundary rather than relying only on frontend controls.
+
+## Password security
+
+Passwords are never stored directly.
+
+Passwords are hashed using Argon2 before being stored in PostgreSQL.
+
+```text
+Password
+   ↓
+Argon2
+   ↓
+passwordHash
+   ↓
+PostgreSQL
+```
+
+## Session security
+
+Authentication uses database backed sessions.
+
+The browser receives an HttpOnly session cookie.
+
+The raw session token is not stored directly in the database.
+
+Instead, the backend stores an HMAC SHA-256 hash of the session token.
+
+```text
+Browser
+   │
+   │ HttpOnly cookie
+   ▼
+Express API
+   │
+   │ HMAC SHA-256
+   ▼
+Session record
+   │
+   ▼
+Authenticated user
+```
+
+Sessions have an expiration time and are removed when invalid or expired.
+
+## Ownership checks
+
+Every protected project and task operation uses the authenticated user's ID.
+
+For example:
+
+```text
+Project lookup
+WHERE id = projectId
+AND ownerId = authenticatedUserId
+```
+
+This prevents one authenticated user from accessing another user's project.
+
+The same ownership principle is applied to tasks.
+
+Task project assignments are also checked to ensure that the selected project belongs to the authenticated user.
+
+## Server side validation
+
+Requests are validated using Zod before database operations.
+
+Examples include:
+
+* Minimum and maximum name lengths
+* Valid email addresses
+* Password length
+* Valid project statuses
+* Valid task statuses
+* Valid task priorities
+* Progress between 0 and 100
+* Valid date formats
+* Required fields
+
+Frontend validation is treated as a user experience feature.
+
+The backend remains the source of truth for request validation.
+
+## HTTP security
+
+The API uses:
+
+* Helmet
+* CORS configuration
+* Rate limiting
+* HttpOnly cookies
+* Request body limits
+* Server side validation
+
+---
+
+# Environment Variables
+
+## Frontend
+
+Create:
+
+```text
+.env.local
+```
+
+Example:
+
+```env
+VITE_API_URL=http://localhost:4000/api
+```
+
+For production, `VITE_API_URL` should point to the deployed backend API.
+
+## Backend
+
+Create:
+
+```text
+server/.env
+```
+
+Example:
+
+```env
+PORT=4000
+CLIENT_URL=http://localhost:5173
+DATABASE_URL=your_postgresql_connection_string
+SESSION_SECRET=your_long_random_session_secret
+```
+
+Never commit real credentials or secrets.
+
+A safe template is provided in:
+
+```text
+.env.example
+```
+
+---
+
+# Installation
+
+## 1. Clone the repository
+
+```bash
+git clone https://github.com/mikeisresilient/flowdesk.git
+cd flowdesk
+```
+
+## 2. Install frontend dependencies
+
+From the project root:
 
 ```bash
 npm install
 ```
 
-### Development
+## 3. Install backend dependencies
+
+```bash
+cd server
+npm install
+```
+
+---
+
+# Database Setup
+
+FlowDesk uses PostgreSQL with Prisma.
+
+Configure the database connection in:
+
+```text
+server/.env
+```
+
+Set:
+
+```env
+DATABASE_URL=your_postgresql_connection_string
+```
+
+Then return to the server directory:
+
+```bash
+cd server
+```
+
+Generate the Prisma client:
+
+```bash
+npx prisma generate
+```
+
+Apply existing migrations:
+
+```bash
+npx prisma migrate deploy
+```
+
+For local development where a new migration needs to be created:
+
+```bash
+npx prisma migrate dev
+```
+
+---
+
+# Running the Application
+
+FlowDesk requires both the frontend and backend servers.
+
+## Terminal 1: Backend
+
+```bash
+cd server
+npm run dev
+```
+
+The API runs on:
+
+```text
+http://localhost:4000
+```
+
+Health check:
+
+```text
+http://localhost:4000/api/health
+```
+
+## Terminal 2: Frontend
+
+From the project root:
 
 ```bash
 npm run dev
 ```
 
-### Production build
+The frontend runs on:
+
+```text
+http://localhost:5173
+```
+
+---
+
+# Production Builds
+
+## Frontend
+
+From the project root:
 
 ```bash
 npm run build
 ```
 
-### Preview production build
+## Backend
+
+From the server directory:
 
 ```bash
+npm run build
+```
+
+Start the compiled backend:
+
+```bash
+npm start
+```
+
+---
+
+# Verification
+
+The following workflows were tested during development.
+
+## Authentication
+
+* Registration succeeds with valid data
+* Duplicate email registration is rejected
+* Login succeeds with valid credentials
+* Invalid credentials are rejected
+* `/api/auth/me` rejects unauthenticated requests
+* Authenticated sessions survive page refresh
+* Logout invalidates the session
+* Session cookie uses HttpOnly protection
+
+## Projects
+
+* Unauthenticated project creation is rejected
+* Authenticated project creation succeeds
+* Projects persist in PostgreSQL
+* Projects can be retrieved
+* Projects can be edited
+* Projects can be deleted
+* Invalid project data is rejected
+* Users cannot access another user's project
+* Users cannot modify another user's project
+* Users cannot delete another user's project
+
+## Tasks
+
+* Unauthenticated task creation is rejected
+* Authenticated task creation succeeds
+* Tasks persist in PostgreSQL
+* Tasks can be retrieved
+* Tasks can be edited
+* Tasks can be deleted
+* Invalid task data is rejected
+* Tasks persist after browser refresh
+* Edited tasks persist after browser refresh
+* Deleted tasks remain deleted after browser refresh
+* Users cannot access another user's task
+* Users cannot modify another user's task
+* Users cannot delete another user's task
+* Task project assignments are ownership checked
+
+## Server side validation
+
+An invalid task request was tested directly against the API.
+
+Example invalid request:
+
+```json
+{
+  "title": "X"
+}
+```
+
+The API returned:
+
+```text
+400 Bad Request
+```
+
+with:
+
+```json
+{
+  "success": false,
+  "message": "Validation failed"
+}
+```
+
+This demonstrates that validation is enforced by the server rather than relying only on frontend validation.
+
+---
+
+# Current Application State
+
+Task 1 frontend requirements have been implemented.
+
+Task 2 backend integration currently includes:
+
+* Real authentication
+* Database backed sessions
+* PostgreSQL persistence
+* Prisma ORM
+* User registration
+* Login
+* Logout
+* Session restoration
+* Project CRUD
+* Task CRUD
+* Server side validation
+* Ownership checks
+* Protected API routes
+* Frontend API integration
+* Persistent dashboard data
+* Security middleware
+* Rate limiting
+* Responsive authenticated interface
+
+---
+
+# Design System
+
+FlowDesk uses a warm yellow led visual system with neutral surfaces and strong contrast.
+
+Primary tokens:
+
+```text
+Primary Yellow:  #F5C542
+Primary Dark:    #D9A514
+Primary Light:   #FFF4C7
+Background:      #FAFAF8
+Surface:         #FFFFFF
+Dark:            #18181B
+Text:             #171717
+Muted:            #6B7280
+Border:           #E5E7EB
+Success:          #16A34A
+Danger:           #DC2626
+Warning:          #CA8A04
+```
+
+The interface was designed responsively from the beginning for:
+
+* Mobile phones
+* Tablets
+* Laptops
+* Desktops
+* Large screens
+
+---
+
+# Accessibility
+
+The application includes accessibility focused practices such as:
+
+* Semantic HTML
+* Accessible form labels
+* Screen reader labels
+* ARIA attributes where appropriate
+* Keyboard accessible controls
+* Visible focus indicators
+* Accessible dropdown interactions
+* Progress bar semantics
+* Error states
+* Loading states
+* Status announcements
+
+---
+
+# Development Scripts
+
+## Frontend
+
+```bash
+npm run dev
+npm run build
+npm run lint
 npm run preview
 ```
 
-## Authentication Scope
+## Backend
 
-The current authentication flow is a **frontend demonstration/mock authentication layer**.
-
-It demonstrates login state, protected routes, persistent frontend session state, logout, and redirecting unauthenticated users to `/login`.
-
-It does **not** claim to provide production-grade authentication.
-
-Production authentication would require a real backend, secure credential handling, server-side session/token validation, password hashing, account verification, secure storage, and other security controls.
-
-## Backend Integration Readiness
-
-The frontend has been structured so backend services can be integrated without rebuilding the application UI.
-
-The service layer currently provides typed contracts for areas such as:
-
-```text
-POST /api/auth/login
-POST /api/auth/register
-POST /api/auth/forgot-password
-
-GET /api/projects
-GET /api/projects/:id
-
-GET /api/tasks
-GET /api/tasks/:id
+```bash
+npm run dev
+npm run build
+npm start
 ```
 
-The API abstraction provides a centralized location for base API URL configuration, HTTP requests, JSON request headers, Bearer-token authorization, HTTP error handling, and typed responses.
+---
 
-Current project and task data remains mock data where a backend endpoint does not yet exist.
+# Project Structure
 
-## Responsive Design
+```text
+flowdesk/
+│
+├── src/
+│   ├── components/
+│   ├── context/
+│   ├── hooks/
+│   ├── layouts/
+│   ├── pages/
+│   ├── routes/
+│   ├── services/
+│   ├── types/
+│   ├── utils/
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+│
+├── server/
+│   ├── prisma/
+│   │   ├── migrations/
+│   │   └── schema.prisma
+│   │
+│   ├── src/
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── middleware/
+│   │   ├── routes/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   ├── types/
+│   │   └── server.ts
+│   │
+│   ├── .env.example
+│   ├── package.json
+│   ├── prisma.config.ts
+│   └── tsconfig.json
+│
+├── .env.example
+├── .gitignore
+├── package.json
+└── README.md
+```
 
-FlowDesk was designed responsively from the beginning rather than treating mobile support as a final polish.
+---
 
-The interface was checked across mobile, large mobile, tablet, laptop, desktop, and large screens.
+# Submission Checklist
 
-Particular attention was given to navigation, cards, tables, forms, filters, dropdowns, calendar layouts, and dashboard content.
+## Task 1
 
-## Accessibility
+* [x] Responsive web application
+* [x] Multi page interface
+* [x] Public views
+* [x] Authenticated views
+* [x] Protected dashboard routes
+* [x] Login
+* [x] Registration
+* [x] Password recovery interface
+* [x] Dashboard
+* [x] Projects
+* [x] Tasks
+* [x] Calendar
+* [x] Notifications
+* [x] Settings
+* [x] Responsive navigation
+* [x] Loading states
+* [x] Error states
+* [x] Empty states
+* [x] 404 page
+* [x] Accessibility foundation
 
-The interface includes accessibility-focused practices such as:
+## Task 2
 
-- Semantic HTML where appropriate
-- Form labels
-- Screen-reader-only labels
-- ARIA roles and states for custom controls
-- Keyboard interaction for the custom dropdown
-- Visible focus indicators
-- Accessible button labels
-- Progress-bar semantics
-- Error and status announcements
+* [x] Backend API
+* [x] PostgreSQL database
+* [x] Prisma schema
+* [x] Prisma migrations
+* [x] User registration
+* [x] Login
+* [x] Logout
+* [x] Database backed sessions
+* [x] HttpOnly session cookie
+* [x] Server side validation
+* [x] Projects CRUD
+* [x] Tasks CRUD
+* [x] Ownership checks
+* [x] Protected API routes
+* [x] Frontend API integration
+* [x] Persistent data
+* [x] Security middleware
+* [x] Rate limiting
+* [x] Frontend build verified
+* [x] Backend build verified
+* [x] Authentication verified
+* [x] CRUD workflows verified
+* [x] Validation verified
+* [x] Persistence verified
 
-## Design System
+---
 
-The interface uses a warm yellow-led visual system with neutral surfaces and strong contrast.
+# Author
 
-Primary visual tokens include:
+Built as a full stack application project for an internship submission.
 
-- Primary yellow: `#F5C542`
-- Primary dark: `#D9A514`
-- Primary light: `#FFF4C7`
-- Background: `#FAFAF8`
-- Surface: `#FFFFFF`
-- Dark: `#18181B`
-
-## Current Scope
-
-This project intentionally focuses on the **frontend foundation required by the internship brief**.
-
-Included:
-- Responsive interface
-- Public views
-- Authenticated views
-- Protected routing
-- Reusable components
-- Accessibility foundation
-- Loading/error/empty states
-- Backend-ready service architecture
-
-Not included:
-- Production backend
-- Production database
-- Real user authentication
-- Real password reset delivery
-- Production authorization
-- Real-time infrastructure
-- Deployment infrastructure
-- Production monitoring
-
-These can be added as a separate production phase if required.
-
-## Submission Checklist
-
-- [x] Responsive web application
-- [x] Multi-page interface
-- [x] Public views
-- [x] Authenticated views
-- [x] Protected dashboard routes
-- [x] Login interface
-- [x] Registration interface
-- [x] Password recovery interface
-- [x] Dashboard
-- [x] Projects
-- [x] Tasks
-- [x] Calendar
-- [x] Notifications
-- [x] Settings
-- [x] Responsive navigation
-- [x] Custom responsive dropdown
-- [x] Loading state
-- [x] Error state
-- [x] Empty states
-- [x] 404 page
-- [x] Accessibility foundation
-- [x] API/service abstraction
-- [x] Production build verified
-- [x] Responsive audit completed
-
-## Author
-
-Built as a frontend application project for an internship submission.
+```

@@ -1,6 +1,23 @@
 import { Bell, Search } from 'lucide-react'
+import { useAuth } from '../../context/useAuth'
+
+function getInitials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
 
 function DashboardHeader() {
+  const { user, isLoading } = useAuth()
+
+  const displayName = user?.name || 'FlowDesk User'
+  const initials = getInitials(displayName) || 'FD'
+
   return (
     <header className="hidden h-[72px] items-center justify-between border-b border-gray-200 bg-white px-6 lg:flex xl:px-8">
       <div>
@@ -40,12 +57,12 @@ function DashboardHeader() {
 
         <div className="flex items-center gap-3 border-l border-gray-200 pl-4">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#18181B] text-xs font-bold text-white">
-            ME
+            {isLoading ? '...' : initials}
           </div>
 
           <div className="hidden xl:block">
             <p className="text-sm font-bold text-gray-900">
-              Michael Ege
+              {isLoading ? 'Loading...' : displayName}
             </p>
 
             <p className="text-xs text-gray-500">

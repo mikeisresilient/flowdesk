@@ -1,49 +1,80 @@
-import { useState, type ReactNode } from 'react'
-import { AuthContext, type User } from './AuthContext'
+import {
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react'
+import {
+  AuthContext,
+  type User,
+} from './AuthContext'
+import {
+  getCurrentUser,
+  loginUser,
+  logoutUser,
+  registerUser,
+} from '../services/authService'
 
 type AuthProviderProps = {
   children: ReactNode
 }
 
 function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(() => {
-    const storedUser = localStorage.getItem('flowdesk_user')
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-    if (!storedUser) {
-      return null
+  useEffect(() => {
+    async function restoreSession() {
+      try {
+        const response = await getCurrentUser()
+        setUser(response.user)
+      } catch {
+        setUser(null)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
+    void restoreSession()
+  }, [])
+
+  const login = async (
+    email: string,
+    password: string,
+  ) => {
     try {
-      return JSON.parse(storedUser) as User
+      const response = await loginUser(email, password)
+      setUser(response.user)
+      return true
     } catch {
-      localStorage.removeItem('flowdesk_user')
-      return null
-    }
-  })
-
-  const login = (email: string, password: string) => {
-    if (!email || !password) {
       return false
     }
-
-    const loggedInUser: User = {
-      name: email.split('@')[0] || 'FlowDesk User',
-      email,
-    }
-
-    localStorage.setItem(
-      'flowdesk_user',
-      JSON.stringify(loggedInUser),
-    )
-
-    setUser(loggedInUser)
-
-    return true
   }
 
-  const logout = () => {
-    localStorage.removeItem('flowdesk_user')
-    setUser(null)
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+  ) => {
+    try {
+      const response = await registerUser({
+        name,
+        email,
+        password,
+      })
+
+      setUser(response.user)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  const logout = async () => {
+    try {
+      await logoutUser()
+    } finally {
+      setUser(null)
+    }
   }
 
   return (
@@ -51,7 +82,9 @@ function AuthProvider({ children }: AuthProviderProps) {
       value={{
         user,
         isAuthenticated: Boolean(user),
+        isLoading,
         login,
+        register,
         logout,
       }}
     >

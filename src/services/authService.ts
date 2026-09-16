@@ -1,11 +1,14 @@
 import apiRequest from './api'
 
-type LoginResponse = {
-  token: string
-  user: {
-    name: string
-    email: string
-  }
+export type User = {
+  id: string
+  name: string
+  email: string
+}
+
+type AuthResponse = {
+  success: boolean
+  user: User
 }
 
 type RegisterPayload = {
@@ -18,7 +21,7 @@ export async function loginUser(
   email: string,
   password: string,
 ) {
-  return apiRequest<LoginResponse>('/auth/login', {
+  return apiRequest<AuthResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({
       email,
@@ -30,15 +33,20 @@ export async function loginUser(
 export async function registerUser(
   payload: RegisterPayload,
 ) {
-  return apiRequest<LoginResponse>('/auth/register', {
+  return apiRequest<AuthResponse>('/auth/register', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 }
 
-export async function requestPasswordReset(email: string) {
-  return apiRequest<{ message: string }>('/auth/forgot-password', {
+export async function getCurrentUser() {
+  return apiRequest<AuthResponse>('/auth/me', {
+    method: 'GET',
+  })
+}
+
+export async function logoutUser() {
+  return apiRequest<void>('/auth/logout', {
     method: 'POST',
-    body: JSON.stringify({ email }),
   })
 }

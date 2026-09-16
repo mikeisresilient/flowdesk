@@ -9,6 +9,7 @@ import {
   User,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useAuth } from '../../context/useAuth'
 
 type ToggleProps = {
   enabled: boolean
@@ -16,7 +17,11 @@ type ToggleProps = {
   label: string
 }
 
-function Toggle({ enabled, onChange, label }: ToggleProps) {
+function Toggle({
+  enabled,
+  onChange,
+  label,
+}: ToggleProps) {
   return (
     <button
       type="button"
@@ -65,8 +70,8 @@ function Toggle({ enabled, onChange, label }: ToggleProps) {
 }
 
 function Settings() {
-  const [fullName, setFullName] = useState('Michael Ege')
-  const [email, setEmail] = useState('michael@example.com')
+  const { user, isLoading } = useAuth()
+
   const [role, setRole] = useState('Product Developer')
 
   const [emailNotifications, setEmailNotifications] =
@@ -107,7 +112,8 @@ function Settings() {
         </h1>
 
         <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base">
-          Manage your profile, preferences and workspace notifications.
+          Manage your profile, preferences and workspace
+          notifications.
         </p>
       </div>
 
@@ -235,10 +241,12 @@ function Settings() {
                 <input
                   id="full-name"
                   type="text"
-                  value={fullName}
-                  onChange={(event) =>
-                    setFullName(event.target.value)
+                  value={
+                    isLoading
+                      ? 'Loading...'
+                      : user?.name ?? ''
                   }
+                  readOnly
                   className="
                     block
                     w-full
@@ -252,10 +260,6 @@ function Settings() {
                     text-sm
                     text-gray-700
                     outline-none
-                    transition
-                    focus:border-[#D9A514]
-                    focus:ring-4
-                    focus:ring-[#F5C542]/15
                   "
                 />
               </div>
@@ -314,10 +318,12 @@ function Settings() {
                   <input
                     id="email"
                     type="email"
-                    value={email}
-                    onChange={(event) =>
-                      setEmail(event.target.value)
+                    value={
+                      isLoading
+                        ? 'Loading...'
+                        : user?.email ?? ''
                     }
+                    readOnly
                     className="
                       block
                       w-full
@@ -332,10 +338,6 @@ function Settings() {
                       text-sm
                       text-gray-700
                       outline-none
-                      transition
-                      focus:border-[#D9A514]
-                      focus:ring-4
-                      focus:ring-[#F5C542]/15
                     "
                   />
                 </div>

@@ -1,31 +1,109 @@
 import apiRequest from './api'
 
-export type TaskStatus = 'To do' | 'In progress' | 'Completed'
-export type TaskPriority = 'High' | 'Medium' | 'Low'
+export type TaskStatus =
+  | 'TODO'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+
+export type TaskPriority =
+  | 'HIGH'
+  | 'MEDIUM'
+  | 'LOW'
 
 export type Task = {
-  id: number
+  id: string
   title: string
-  project: string
+  description: string | null
   status: TaskStatus
   priority: TaskPriority
-  dueDate: string
-  assignee: string
+  dueDate: string | null
+  ownerId: string
+  projectId: string | null
+  createdAt: string
+  updatedAt: string
 }
 
-export async function getTasks(token?: string) {
-  return apiRequest<Task[]>('/tasks', {
-    method: 'GET',
-    token,
-  })
+export type CreateTaskPayload = {
+  title: string
+  description?: string
+  status?: TaskStatus
+  priority?: TaskPriority
+  dueDate?: string
+  projectId?: string
 }
 
-export async function getTaskById(
-  id: number,
-  token?: string,
+export type UpdateTaskPayload = {
+  title?: string
+  description?: string | null
+  status?: TaskStatus
+  priority?: TaskPriority
+  dueDate?: string | null
+  projectId?: string | null
+}
+
+type TasksResponse = {
+  success: boolean
+  tasks: Task[]
+}
+
+type TaskResponse = {
+  success: boolean
+  task: Task
+}
+
+export async function getTasks() {
+  const response = await apiRequest<TasksResponse>(
+    '/tasks',
+    {
+      method: 'GET',
+    },
+  )
+
+  return response.tasks
+}
+
+export async function getTaskById(id: string) {
+  const response = await apiRequest<TaskResponse>(
+    `/tasks/${id}`,
+    {
+      method: 'GET',
+    },
+  )
+
+  return response.task
+}
+
+export async function createTask(
+  payload: CreateTaskPayload,
 ) {
-  return apiRequest<Task>(`/tasks/${id}`, {
-    method: 'GET',
-    token,
+  const response = await apiRequest<TaskResponse>(
+    '/tasks',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  )
+
+  return response.task
+}
+
+export async function updateTask(
+  id: string,
+  payload: UpdateTaskPayload,
+) {
+  const response = await apiRequest<TaskResponse>(
+    `/tasks/${id}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    },
+  )
+
+  return response.task
+}
+
+export async function deleteTask(id: string) {
+  await apiRequest<void>(`/tasks/${id}`, {
+    method: 'DELETE',
   })
 }

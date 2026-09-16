@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SyntheticEvent } from 'react'
 import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
@@ -8,24 +8,44 @@ function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  async function handleSubmit(
+    event: SyntheticEvent<HTMLFormElement>,
+  ) {
     event.preventDefault()
     setError('')
 
-    const success = login(email, password)
+    const trimmedEmail = email.trim()
 
-    if (!success) {
+    if (!trimmedEmail || !password) {
       setError('Please enter your email and password.')
       return
     }
 
-    const from = location.state?.from || '/dashboard'
-    navigate(from, { replace: true })
+    setIsSubmitting(true)
+
+    try {
+      const success = await login(
+        trimmedEmail,
+        password,
+      )
+
+      if (!success) {
+        setError('Invalid email or password.')
+        return
+      }
+
+      const from = location.state?.from || '/dashboard'
+
+      navigate(from, { replace: true })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -42,7 +62,11 @@ function Login() {
         Enter your details to continue to your workspace.
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+      <form
+        onSubmit={handleSubmit}
+        className="mt-8 space-y-5"
+        noValidate
+      >
         <div>
           <label
             htmlFor="email"
@@ -62,8 +86,11 @@ function Login() {
               type="email"
               autoComplete="email"
               required
+              maxLength={254}
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) =>
+                setEmail(event.target.value)
+              }
               placeholder="you@example.com"
               className="w-full rounded-xl border border-gray-300 bg-white py-3.5 pl-11 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#D9A514] focus:ring-4 focus:ring-[#F5C542]/15"
             />
@@ -95,22 +122,37 @@ function Login() {
 
             <input
               id="password"
-              type={showPassword ? 'text' : 'password'}
+              type={
+                showPassword ? 'text' : 'password'
+              }
               autoComplete="current-password"
               required
+              maxLength={128}
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) =>
+                setPassword(event.target.value)
+              }
               placeholder="Enter your password"
               className="w-full rounded-xl border border-gray-300 bg-white py-3.5 pl-11 pr-12 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#D9A514] focus:ring-4 focus:ring-[#F5C542]/15"
             />
 
             <button
               type="button"
-              onClick={() => setShowPassword((value) => !value)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              onClick={() =>
+                setShowPassword((value) => !value)
+              }
+              aria-label={
+                showPassword
+                  ? 'Hide password'
+                  : 'Show password'
+              }
               className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#F5C542]"
             >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPassword ? (
+                <EyeOff size={18} />
+              ) : (
+                <Eye size={18} />
+              )}
             </button>
           </div>
         </div>
@@ -131,16 +173,20 @@ function Login() {
             className="h-4 w-4 rounded border-gray-300 accent-[#F5C542]"
           />
 
-          <label htmlFor="remember" className="text-sm text-gray-600">
+          <label
+            htmlFor="remember"
+            className="text-sm text-gray-600"
+          >
             Remember me
           </label>
         </div>
 
         <button
           type="submit"
-          className="w-full rounded-xl bg-[#F5C542] px-5 py-3.5 text-sm font-black text-[#171717] transition hover:bg-[#E9B72F] focus:outline-none focus:ring-2 focus:ring-[#D9A514] focus:ring-offset-2"
+          disabled={isSubmitting}
+          className="w-full rounded-xl bg-[#F5C542] px-5 py-3.5 text-sm font-black text-[#171717] transition hover:bg-[#E9B72F] focus:outline-none focus:ring-2 focus:ring-[#D9A514] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Sign in
+          {isSubmitting ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
 
