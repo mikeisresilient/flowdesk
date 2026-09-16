@@ -5,6 +5,7 @@ import {
   ListTodo,
   TrendingUp,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import StatCard from '../../components/ui/StatCard'
 import { getProjects, type Project } from '../../services/projectService'
 import { getTasks, type Task } from '../../services/taskService'
@@ -264,12 +265,12 @@ function Dashboard() {
               </p>
             </div>
 
-            <button
-              type="button"
-              className="text-sm font-bold text-[#9A7608] hover:text-[#705604]"
+            <Link
+              to="/dashboard/projects"
+              className="shrink-0 text-sm font-bold text-[#9A7608] transition-colors hover:text-[#705604] focus:outline-none focus:ring-2 focus:ring-[#F5C542] focus:ring-offset-2 rounded"
             >
               View all
-            </button>
+            </Link>
           </div>
 
           <div className="mt-6 space-y-5">
