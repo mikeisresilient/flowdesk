@@ -53,6 +53,6 @@ app.use((_req, res) => {
   })
 })
 
-app.listen(PORT, () => {
-  console.log(`FlowDesk API running on http://localhost:${PORT}`)
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`FlowDesk API running on port ${PORT}`)
 })
