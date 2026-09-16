@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://flowdesk-api-dhsy.onrender.com/api/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
