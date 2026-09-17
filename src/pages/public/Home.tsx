@@ -4,28 +4,29 @@ import {
   LayoutDashboard,
   ShieldCheck,
   Zap,
-} from "lucide-react";
+} from 'lucide-react'
+import DashboardPreview from '../../components/home/DashboardPreview'
 
 const features = [
   {
     icon: LayoutDashboard,
-    title: "Everything in one place",
+    title: 'Everything in one place',
     description:
-      "Keep projects, tasks, updates, and important information organized inside one workspace.",
+      'Keep projects, tasks, updates, and important information organized inside one workspace.',
   },
   {
     icon: Zap,
-    title: "Move faster",
+    title: 'Move faster',
     description:
-      "Reduce unnecessary complexity and help your team focus on the work that actually matters.",
+      'Reduce unnecessary complexity and help your team focus on the work that actually matters.',
   },
   {
     icon: ShieldCheck,
-    title: "Built with security in mind",
+    title: 'Built with security in mind',
     description:
-      "A frontend architecture designed to connect cleanly with secure authentication and backend services.",
+      'A frontend architecture designed to connect cleanly with secure authentication and backend services.',
   },
-];
+]
 
 function Home() {
   return (
@@ -33,7 +34,8 @@ function Home() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="mx-auto max-w-[1200px] px-5 pb-20 pt-16 sm:px-6 sm:pt-20 lg:px-8 lg:pb-28 lg:pt-28">
-          <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
+          <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-16">
+            {/* Hero content */}
             <div>
               <p className="mb-6 ml-1 text-sm font-bold uppercase tracking-[0.18em] text-[#B38708]">
                 Your workspace, simplified
@@ -41,7 +43,9 @@ function Home() {
 
               <h1 className="max-w-3xl text-5xl font-black leading-[1.05] tracking-[-0.04em] text-[#171717] sm:text-6xl lg:text-7xl">
                 Work smarter.
-                <span className="block text-[#D9A514]">Stay in control.</span>
+                <span className="block text-[#D9A514]">
+                  Stay in control.
+                </span>
               </h1>
 
               <p className="mt-6 max-w-xl text-base leading-7 text-gray-600 sm:text-lg">
@@ -85,73 +89,17 @@ function Home() {
               </div>
             </div>
 
-            {/* Dashboard preview */}
-            <div className="relative">
-              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#F5C542]/20 blur-3xl" />
-
-              <div className="relative rounded-3xl border border-gray-200 bg-white p-3 shadow-2xl shadow-gray-200/70">
-                <div className="overflow-hidden rounded-2xl bg-[#18181B]">
-                  {/* Mock header */}
-                  <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-lg bg-[#F5C542]" />
-                      <div className="h-3 w-20 rounded bg-white/80" />
-                    </div>
-
-                    <div className="h-8 w-8 rounded-full bg-white/10" />
-                  </div>
-
-                  <div className="grid grid-cols-[72px_1fr] sm:grid-cols-[100px_1fr]">
-                    {/* Sidebar */}
-                    <div className="border-r border-white/10 p-3">
-                      <div className="space-y-3">
-                        <div className="h-8 rounded-lg bg-[#F5C542]" />
-                        <div className="h-8 rounded-lg bg-white/5" />
-                        <div className="h-8 rounded-lg bg-white/5" />
-                        <div className="h-8 rounded-lg bg-white/5" />
-                      </div>
-                    </div>
-
-                    {/* Dashboard */}
-                    <div className="p-4 sm:p-6">
-                      <div className="mb-5">
-                        <div className="h-4 w-24 rounded bg-white/80" />
-                        <div className="mt-2 h-3 w-40 rounded bg-white/20" />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        {[1, 2, 3].map((item) => (
-                          <div key={item} className="rounded-xl bg-white/5 p-3">
-                            <div className="h-2.5 w-12 rounded bg-white/20" />
-                            <div className="mt-3 h-6 w-16 rounded bg-white/70" />
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="mt-4 rounded-xl bg-white/5 p-4">
-                        <div className="h-3 w-28 rounded bg-white/30" />
-
-                        <div className="mt-5 flex h-28 items-end gap-2">
-                          {[45, 65, 40, 80, 55, 90, 70].map((height, index) => (
-                            <div
-                              key={index}
-                              className="flex-1 rounded-t-md bg-[#F5C542]"
-                              style={{ height: `${height}%` }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Real dashboard preview */}
+            <DashboardPreview />
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section id="features" className="border-y border-gray-200 bg-white">
+      <section
+        id="features"
+        className="border-y border-gray-200 bg-white"
+      >
         <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-6 lg:px-8 lg:py-24">
           <div className="max-w-2xl">
             <p className="text-sm font-bold uppercase tracking-widest text-[#B38708]">
@@ -170,7 +118,7 @@ function Home() {
 
           <div className="mt-12 grid gap-5 md:grid-cols-3">
             {features.map((feature) => {
-              const Icon = feature.icon;
+              const Icon = feature.icon
 
               return (
                 <article
@@ -189,7 +137,7 @@ function Home() {
                     {feature.description}
                   </p>
                 </article>
-              );
+              )
             })}
           </div>
         </div>
@@ -225,7 +173,7 @@ function Home() {
         </div>
       </section>
     </>
-  );
+  )
 }
 
-export default Home;
+export default Home
