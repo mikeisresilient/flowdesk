@@ -3,75 +3,25 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
-  MapPin,
   Plus,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import LoadingState from '../../components/ui/LoadingState'
+import ErrorState from '../../components/ui/ErrorState'
+import {
+  getTasks,
+  type Task,
+} from '../../services/taskService'
 
 type CalendarEvent = {
-  id: number
+  id: string
   title: string
   date: string
   time: string
-  type: 'meeting' | 'deadline' | 'task'
-  location?: string
+  type: 'task'
+  status: Task['status']
+  priority: Task['priority']
 }
-
-const calendarEvents: CalendarEvent[] = [
-  {
-    id: 1,
-    title: 'Design review',
-    date: '2026-09-10',
-    time: '10:00 AM',
-    type: 'meeting',
-    location: 'Design Room',
-  },
-  {
-    id: 2,
-    title: 'Website redesign deadline',
-    date: '2026-09-18',
-    time: '5:00 PM',
-    type: 'deadline',
-  },
-  {
-    id: 3,
-    title: 'Team stand-up',
-    date: '2026-09-14',
-    time: '9:00 AM',
-    type: 'meeting',
-    location: 'Online',
-  },
-  {
-    id: 4,
-    title: 'Campaign assets review',
-    date: '2026-09-16',
-    time: '2:00 PM',
-    type: 'task',
-  },
-  {
-    id: 5,
-    title: 'Client presentation',
-    date: '2026-09-22',
-    time: '11:30 AM',
-    type: 'meeting',
-    location: 'Conference Room',
-  },
-  {
-    id: 6,
-    title: 'Mobile app milestone',
-    date: '2026-09-26',
-    time: '4:00 PM',
-    type: 'deadline',
-  },
-  {
-    id: 7,
-    title: 'Weekly planning',
-    date: '2026-09-28',
-    time: '9:30 AM',
-    type: 'meeting',
-    location: 'Online',
-  },
-]
 
 const monthNames = [
   'January',
@@ -88,38 +38,68 @@ const monthNames = [
   'December',
 ]
 
-const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const weekDays = [
+  'Sun',
+  'Mon',
+  'Tue',
+  'Wed',
+  'Thu',
+  'Fri',
+  'Sat',
+]
 
 function formatDateKey(date: Date) {
   const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(
+    2,
+    '0',
+  )
   const day = String(date.getDate()).padStart(2, '0')
 
   return `${year}-${month}-${day}`
 }
 
-function getDaysInMonth(year: number, month: number) {
+function getDaysInMonth(
+  year: number,
+  month: number,
+) {
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
 
   const startingDay = firstDay.getDay()
   const totalDays = lastDay.getDate()
 
-  const previousMonthLastDay = new Date(year, month, 0).getDate()
+  const previousMonthLastDay = new Date(
+    year,
+    month,
+    0,
+  ).getDate()
 
   const days: {
     date: Date
     isCurrentMonth: boolean
   }[] = []
 
-  for (let index = startingDay - 1; index >= 0; index -= 1) {
+  for (
+    let index = startingDay - 1;
+    index >= 0;
+    index -= 1
+  ) {
     days.push({
-      date: new Date(year, month - 1, previousMonthLastDay - index),
+      date: new Date(
+        year,
+        month - 1,
+        previousMonthLastDay - index,
+      ),
       isCurrentMonth: false,
     })
   }
 
-  for (let day = 1; day <= totalDays; day += 1) {
+  for (
+    let day = 1;
+    day <= totalDays;
+    day += 1
+  ) {
     days.push({
       date: new Date(year, month, day),
       isCurrentMonth: true,
@@ -130,7 +110,11 @@ function getDaysInMonth(year: number, month: number) {
 
   while (days.length < 42) {
     days.push({
-      date: new Date(year, month + 1, nextMonthDay),
+      date: new Date(
+        year,
+        month + 1,
+        nextMonthDay,
+      ),
       isCurrentMonth: false,
     })
 
@@ -140,15 +124,120 @@ function getDaysInMonth(year: number, month: number) {
   return days
 }
 
+function formatEventTime(dateString: string) {
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(dateString))
+}
+
+function formatEventDate(date: string) {
+  const eventDate = new Date(
+    `${date}T12:00:00`,
+  )
+
+  return eventDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+function getTaskEventStyles(
+  status: Task['status'],
+) {
+  switch (status) {
+    case 'COMPLETED':
+      return 'bg-green-50 text-green-700'
+
+    case 'IN_PROGRESS':
+      return 'bg-[#FFF4C7] text-[#806207]'
+
+    case 'TODO':
+    default:
+      return 'bg-gray-100 text-gray-700'
+  }
+}
+
 function Calendar() {
   const today = new Date()
   const todayKey = formatDateKey(today)
 
-  const [currentDate, setCurrentDate] = useState(
-    () => new Date(today.getFullYear(), today.getMonth(), 1),
-  )
+  const [currentDate, setCurrentDate] =
+    useState(
+      () =>
+        new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          1,
+        ),
+    )
 
-  const [selectedDate, setSelectedDate] = useState(todayKey)
+  const [selectedDate, setSelectedDate] =
+    useState(todayKey)
+
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [isLoading, setIsLoading] =
+    useState(true)
+  const [hasError, setHasError] =
+    useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadTasks() {
+      setIsLoading(true)
+      setHasError(false)
+
+      try {
+        const taskData = await getTasks()
+
+        if (!isMounted) {
+          return
+        }
+
+        setTasks(taskData)
+      } catch {
+        if (!isMounted) {
+          return
+        }
+
+        setHasError(true)
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadTasks()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const calendarEvents =
+    useMemo<CalendarEvent[]>(() => {
+      return tasks
+        .filter((task) => task.dueDate)
+        .map((task) => {
+          const dueDate = new Date(
+            task.dueDate as string,
+          )
+
+          return {
+            id: task.id,
+            title: task.title,
+            date: formatDateKey(dueDate),
+            time: formatEventTime(
+              task.dueDate as string,
+            ),
+            type: 'task',
+            status: task.status,
+            priority: task.priority,
+          }
+        })
+    }, [tasks])
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -159,76 +248,72 @@ function Calendar() {
   )
 
   const eventsByDate = useMemo(() => {
-    return calendarEvents.reduce<Record<string, CalendarEvent[]>>(
-      (accumulator, event) => {
-        if (!accumulator[event.date]) {
-          accumulator[event.date] = []
-        }
+    return calendarEvents.reduce<
+      Record<string, CalendarEvent[]>
+    >((accumulator, event) => {
+      if (!accumulator[event.date]) {
+        accumulator[event.date] = []
+      }
 
-        accumulator[event.date].push(event)
+      accumulator[event.date].push(event)
 
-        return accumulator
-      },
-      {},
-    )
-  }, [])
+      return accumulator
+    }, {})
+  }, [calendarEvents])
 
-  const selectedEvents = eventsByDate[selectedDate] ?? []
+  const selectedEvents =
+    eventsByDate[selectedDate] ?? []
 
-  /*
-   * No useMemo needed here.
-   *
-   * This is a small static list and calculating it directly avoids
-   * unnecessary React Compiler memoization issues.
-   */
-  const upcomingEvents = calendarEvents
-    .filter((event) => event.date >= todayKey)
-    .sort((a, b) => {
-      return `${a.date} ${a.time}`.localeCompare(
-        `${b.date} ${b.time}`,
+  const upcomingEvents = useMemo(() => {
+    return calendarEvents
+      .filter(
+        (event) => event.date >= todayKey,
       )
-    })
-    .slice(0, 5)
+      .sort((a, b) =>
+        `${a.date} ${a.time}`.localeCompare(
+          `${b.date} ${b.time}`,
+        ),
+      )
+      .slice(0, 5)
+  }, [calendarEvents, todayKey])
 
   const goToPreviousMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1))
+    setCurrentDate(
+      new Date(year, month - 1, 1),
+    )
   }
 
   const goToNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1))
+    setCurrentDate(
+      new Date(year, month + 1, 1),
+    )
   }
 
   const goToToday = () => {
     setCurrentDate(
-      new Date(today.getFullYear(), today.getMonth(), 1),
+      new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        1,
+      ),
     )
 
     setSelectedDate(todayKey)
   }
 
-  const getEventTypeStyles = (type: CalendarEvent['type']) => {
-    switch (type) {
-      case 'meeting':
-        return 'bg-blue-50 text-blue-700'
-
-      case 'deadline':
-        return 'bg-red-50 text-red-700'
-
-      case 'task':
-        return 'bg-[#FFF4C7] text-[#806207]'
-
-      default:
-        return 'bg-gray-100 text-gray-700'
-    }
+  if (isLoading) {
+    return (
+      <LoadingState message="Loading calendar..." />
+    )
   }
 
-  const formatEventDate = (date: string) => {
-    const eventDate = new Date(`${date}T12:00:00`)
-
-    return eventDate.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    })
+  if (hasError) {
+    return (
+      <ErrorState
+        message="We couldn't load your calendar. Please try again."
+        onRetry={() => window.location.reload()}
+      />
+    )
   }
 
   return (
@@ -245,16 +330,19 @@ function Calendar() {
           </h1>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base">
-            Keep track of meetings, deadlines and important project dates.
+            Keep track of task deadlines and important project dates.
           </p>
         </div>
 
         <button
           type="button"
+          disabled
+          title="Create a task with a due date to add it to the calendar."
           className="
             inline-flex
             w-full
             shrink-0
+            cursor-not-allowed
             items-center
             justify-center
             gap-2
@@ -265,11 +353,7 @@ function Calendar() {
             text-sm
             font-bold
             text-[#18181B]
-            transition
-            hover:bg-[#E9B931]
-            focus:outline-none
-            focus:ring-4
-            focus:ring-[#F5C542]/30
+            opacity-60
             sm:w-auto
           "
         >
@@ -291,10 +375,13 @@ function Calendar() {
 
               <p className="mt-1 text-xs font-medium text-gray-400">
                 {selectedEvents.length > 0
-                  ? `${selectedEvents.length} event${
-                      selectedEvents.length === 1 ? '' : 's'
+                  ? `${selectedEvents.length} task${
+                      selectedEvents.length ===
+                      1
+                        ? ''
+                        : 's'
                     } selected`
-                  : 'Select a date to view events'}
+                  : 'Select a date to view tasks'}
               </p>
             </div>
 
@@ -324,7 +411,9 @@ function Calendar() {
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={goToPreviousMonth}
+                  onClick={
+                    goToPreviousMonth
+                  }
                   aria-label="Previous month"
                   className="
                     flex
@@ -404,158 +493,180 @@ function Calendar() {
 
           {/* Calendar days */}
           <div className="grid grid-cols-7">
-            {days.map(({ date, isCurrentMonth }) => {
-              const dateKey = formatDateKey(date)
-              const dayEvents = eventsByDate[dateKey] ?? []
-              const isToday = dateKey === todayKey
-              const isSelected = dateKey === selectedDate
+            {days.map(
+              ({ date, isCurrentMonth }) => {
+                const dateKey =
+                  formatDateKey(date)
 
-              return (
-                <button
-                  key={dateKey}
-                  type="button"
-                  onClick={() => setSelectedDate(dateKey)}
-                  aria-label={`${date.toLocaleDateString(
-                    'en-US',
-                    {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    },
-                  )}${
-                    dayEvents.length > 0
-                      ? `, ${dayEvents.length} events`
-                      : ''
-                  }`}
-                  className={`
-                    relative
-                    min-h-[76px]
-                    min-w-0
-                    border-b
-                    border-r
-                    border-gray-100
-                    p-1.5
-                    text-left
-                    transition
-                    hover:bg-[#FAFAF8]
-                    focus:z-10
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-inset
-                    focus:ring-[#F5C542]
-                    sm:min-h-[100px]
-                    sm:p-2
-                    lg:min-h-[115px]
-                    ${
-                      isSelected
-                        ? 'bg-[#FFF9E5]'
-                        : 'bg-white'
+                const dayEvents =
+                  eventsByDate[dateKey] ?? []
+
+                const isToday =
+                  dateKey === todayKey
+
+                const isSelected =
+                  dateKey === selectedDate
+
+                return (
+                  <button
+                    key={dateKey}
+                    type="button"
+                    onClick={() =>
+                      setSelectedDate(
+                        dateKey,
+                      )
                     }
-                  `}
-                >
-                  <div className="flex items-start justify-between gap-1">
-                    <span
-                      className={`
-                        flex
-                        h-7
-                        w-7
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-full
-                        text-xs
-                        font-bold
-                        sm:h-8
-                        sm:w-8
-                        sm:text-sm
-                        ${
-                          isToday
-                            ? 'bg-[#F5C542] text-[#18181B]'
-                            : isSelected
-                              ? 'bg-[#18181B] text-white'
-                              : isCurrentMonth
-                                ? 'text-gray-700'
-                                : 'text-gray-300'
-                        }
-                      `}
-                    >
-                      {date.getDate()}
-                    </span>
-
-                    {dayEvents.length > 0 && (
+                    aria-label={`${date.toLocaleDateString(
+                      'en-US',
+                      {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      },
+                    )}${
+                      dayEvents.length > 0
+                        ? `, ${dayEvents.length} tasks`
+                        : ''
+                    }`}
+                    className={`
+                      relative
+                      min-h-[76px]
+                      min-w-0
+                      border-b
+                      border-r
+                      border-gray-100
+                      p-1.5
+                      text-left
+                      transition
+                      hover:bg-[#FAFAF8]
+                      focus:z-10
+                      focus:outline-none
+                      focus:ring-2
+                      focus:ring-inset
+                      focus:ring-[#F5C542]
+                      sm:min-h-[100px]
+                      sm:p-2
+                      lg:min-h-[115px]
+                      ${
+                        isSelected
+                          ? 'bg-[#FFF9E5]'
+                          : 'bg-white'
+                      }
+                    `}
+                  >
+                    <div className="flex items-start justify-between gap-1">
                       <span
-                        aria-hidden="true"
-                        className="
-                          mt-1
-                          h-1.5
-                          w-1.5
-                          shrink-0
-                          rounded-full
-                          bg-[#D9A514]
-                          sm:h-2
-                          sm:w-2
-                        "
-                      />
-                    )}
-                  </div>
-
-                  {/* Desktop events */}
-                  <div className="mt-2 hidden space-y-1 sm:block">
-                    {dayEvents.slice(0, 2).map((event) => (
-                      <div
-                        key={event.id}
                         className={`
-                          truncate
-                          rounded-md
-                          px-1.5
-                          py-1
-                          text-[10px]
-                          font-semibold
-                          ${getEventTypeStyles(event.type)}
-                          lg:text-[11px]
+                          flex
+                          h-7
+                          w-7
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-full
+                          text-xs
+                          font-bold
+                          sm:h-8
+                          sm:w-8
+                          sm:text-sm
+                          ${
+                            isToday
+                              ? 'bg-[#F5C542] text-[#18181B]'
+                              : isSelected
+                                ? 'bg-[#18181B] text-white'
+                                : isCurrentMonth
+                                  ? 'text-gray-700'
+                                  : 'text-gray-300'
+                          }
                         `}
                       >
-                        {event.title}
-                      </div>
-                    ))}
+                        {date.getDate()}
+                      </span>
 
-                    {dayEvents.length > 2 && (
-                      <p className="px-1 text-[10px] font-semibold text-gray-400">
-                        +{dayEvents.length - 2} more
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Mobile event indicators */}
-                  {dayEvents.length > 0 && (
-                    <div className="mt-2 flex gap-1 sm:hidden">
-                      {dayEvents.slice(0, 3).map((event) => (
+                      {dayEvents.length > 0 && (
                         <span
-                          key={event.id}
                           aria-hidden="true"
-                          className={`
+                          className="
+                            mt-1
                             h-1.5
                             w-1.5
+                            shrink-0
                             rounded-full
-                            ${
-                              event.type === 'deadline'
-                                ? 'bg-red-500'
-                                : event.type === 'meeting'
-                                  ? 'bg-blue-500'
-                                  : 'bg-[#D9A514]'
-                            }
-                          `}
+                            bg-[#D9A514]
+                            sm:h-2
+                            sm:w-2
+                          "
                         />
-                      ))}
+                      )}
                     </div>
-                  )}
-                </button>
-              )
-            })}
+
+                    {/* Desktop events */}
+                    <div className="mt-2 hidden space-y-1 sm:block">
+                      {dayEvents
+                        .slice(0, 2)
+                        .map((event) => (
+                          <div
+                            key={event.id}
+                            className={`
+                              truncate
+                              rounded-md
+                              px-1.5
+                              py-1
+                              text-[10px]
+                              font-semibold
+                              ${getTaskEventStyles(
+                                event.status,
+                              )}
+                              lg:text-[11px]
+                            `}
+                          >
+                            {event.title}
+                          </div>
+                        ))}
+
+                      {dayEvents.length > 2 && (
+                        <p className="px-1 text-[10px] font-semibold text-gray-400">
+                          +{dayEvents.length - 2}{' '}
+                          more
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Mobile indicators */}
+                    {dayEvents.length > 0 && (
+                      <div className="mt-2 flex gap-1 sm:hidden">
+                        {dayEvents
+                          .slice(0, 3)
+                          .map((event) => (
+                            <span
+                              key={event.id}
+                              aria-hidden="true"
+                              className={`
+                                h-1.5
+                                w-1.5
+                                rounded-full
+                                ${
+                                  event.status ===
+                                  'COMPLETED'
+                                    ? 'bg-green-500'
+                                    : event.status ===
+                                        'IN_PROGRESS'
+                                      ? 'bg-[#D9A514]'
+                                      : 'bg-gray-400'
+                                }
+                              `}
+                            />
+                          ))}
+                      </div>
+                    )}
+                  </button>
+                )
+              },
+            )}
           </div>
         </section>
 
-        {/* Upcoming events */}
+        {/* Upcoming tasks */}
         <aside className="min-w-0 rounded-2xl border border-gray-200 bg-white shadow-sm">
           <div className="border-b border-gray-100 p-5">
             <div className="flex items-center gap-3">
@@ -569,7 +680,7 @@ function Calendar() {
                 </h2>
 
                 <p className="text-xs font-medium text-gray-400">
-                  Your next important events
+                  Your next task deadlines
                 </p>
               </div>
             </div>
@@ -578,94 +689,106 @@ function Calendar() {
           <div className="p-4 sm:p-5">
             {upcomingEvents.length > 0 ? (
               <div className="space-y-3">
-                {upcomingEvents.map((event) => (
-                  <button
-                    key={event.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedDate(event.date)
+                {upcomingEvents.map(
+                  (event) => (
+                    <button
+                      key={event.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(
+                          event.date,
+                        )
 
-                      setCurrentDate(
-                        new Date(
-                          Number(event.date.slice(0, 4)),
-                          Number(event.date.slice(5, 7)) - 1,
-                          1,
-                        ),
-                      )
-                    }}
-                    className="
-                      w-full
-                      min-w-0
-                      rounded-xl
-                      border
-                      border-gray-100
-                      bg-[#FAFAF8]
-                      p-4
-                      text-left
-                      transition
-                      hover:border-gray-200
-                      hover:bg-white
-                      hover:shadow-sm
-                      focus:outline-none
-                      focus:ring-2
-                      focus:ring-[#F5C542]
-                    "
-                  >
-                    <div className="flex min-w-0 items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <span
-                          className={`
-                            inline-flex
-                            rounded-full
-                            px-2
-                            py-1
-                            text-[10px]
-                            font-bold
-                            uppercase
-                            tracking-wide
-                            ${getEventTypeStyles(event.type)}
-                          `}
-                        >
-                          {event.type}
+                        setCurrentDate(
+                          new Date(
+                            Number(
+                              event.date.slice(
+                                0,
+                                4,
+                              ),
+                            ),
+                            Number(
+                              event.date.slice(
+                                5,
+                                7,
+                              ),
+                            ) - 1,
+                            1,
+                          ),
+                        )
+                      }}
+                      className="
+                        w-full
+                        min-w-0
+                        rounded-xl
+                        border
+                        border-gray-100
+                        bg-[#FAFAF8]
+                        p-4
+                        text-left
+                        transition
+                        hover:border-gray-200
+                        hover:bg-white
+                        hover:shadow-sm
+                        focus:outline-none
+                        focus:ring-2
+                        focus:ring-[#F5C542]
+                      "
+                    >
+                      <div className="flex min-w-0 items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <span
+                            className={`
+                              inline-flex
+                              rounded-full
+                              px-2
+                              py-1
+                              text-[10px]
+                              font-bold
+                              uppercase
+                              tracking-wide
+                              ${getTaskEventStyles(
+                                event.status,
+                              )}
+                            `}
+                          >
+                            {event.status ===
+                            'TODO'
+                              ? 'To do'
+                              : event.status ===
+                                  'IN_PROGRESS'
+                                ? 'In progress'
+                                : 'Completed'}
+                          </span>
+
+                          <h3 className="mt-2 truncate text-sm font-bold text-[#18181B]">
+                            {event.title}
+                          </h3>
+                        </div>
+
+                        <span className="shrink-0 text-xs font-bold text-[#B38708]">
+                          {formatEventDate(
+                            event.date,
+                          )}
                         </span>
-
-                        <h3 className="mt-2 truncate text-sm font-bold text-[#18181B]">
-                          {event.title}
-                        </h3>
                       </div>
 
-                      <span className="shrink-0 text-xs font-bold text-[#B38708]">
-                        {formatEventDate(event.date)}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium text-gray-500">
-                      <span className="inline-flex items-center gap-1.5">
+                      <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-gray-500">
                         <Clock3 size={13} />
                         {event.time}
-                      </span>
-
-                      {event.location && (
-                        <span className="inline-flex min-w-0 items-center gap-1.5">
-                          <MapPin size={13} />
-
-                          <span className="truncate">
-                            {event.location}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                ))}
+                      </div>
+                    </button>
+                  ),
+                )}
               </div>
             ) : (
               <div className="py-8 text-center">
                 <p className="text-sm font-semibold text-gray-600">
-                  No upcoming events
+                  No upcoming tasks
                 </p>
 
                 <p className="mt-1 text-xs text-gray-400">
-                  Your schedule is clear.
+                  Tasks with due dates will appear here.
                 </p>
               </div>
             )}
@@ -682,21 +805,22 @@ function Calendar() {
             </p>
 
             <h2 className="mt-1 text-lg font-black text-[#18181B]">
-              {new Date(`${selectedDate}T12:00:00`).toLocaleDateString(
-                'en-US',
-                {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                },
-              )}
+              {new Date(
+                `${selectedDate}T12:00:00`,
+              ).toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
             </h2>
           </div>
 
           <span className="text-sm font-semibold text-gray-400">
             {selectedEvents.length}{' '}
-            {selectedEvents.length === 1 ? 'event' : 'events'}
+            {selectedEvents.length === 1
+              ? 'task'
+              : 'tasks'}
           </span>
         </div>
 
@@ -725,7 +849,9 @@ function Calendar() {
                       items-center
                       justify-center
                       rounded-lg
-                      ${getEventTypeStyles(event.type)}
+                      ${getTaskEventStyles(
+                        event.status,
+                      )}
                     `}
                   >
                     <Clock3 size={16} />
@@ -740,12 +866,15 @@ function Calendar() {
                       {event.time}
                     </p>
 
-                    {event.location && (
-                      <p className="mt-1 flex items-center gap-1 text-xs font-medium text-gray-400">
-                        <MapPin size={12} />
-                        {event.location}
-                      </p>
-                    )}
+                    <p className="mt-1 text-xs font-medium text-gray-400">
+                      {event.status ===
+                      'TODO'
+                        ? 'To do'
+                        : event.status ===
+                            'IN_PROGRESS'
+                          ? 'In progress'
+                          : 'Completed'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -763,7 +892,7 @@ function Calendar() {
             </p>
 
             <p className="mt-1 text-xs text-gray-400">
-              There are no events on this date.
+              There are no tasks due on this date.
             </p>
           </div>
         )}

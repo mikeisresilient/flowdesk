@@ -3,6 +3,30 @@ import type {
   CreateTaskInput,
   UpdateTaskInput,
 } from '../schemas/taskSchemas.js'
+import { createNotification } from './notificationService.js'
+
+type TaskStatus =
+  | 'TODO'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+
+const allowedTaskTransitions: Record<
+  TaskStatus,
+  TaskStatus[]
+> = {
+  TODO: ['IN_PROGRESS'],
+  IN_PROGRESS: ['TODO', 'COMPLETED'],
+  COMPLETED: ['IN_PROGRESS'],
+}
+
+function isValidTaskStatusTransition(
+  currentStatus: TaskStatus,
+  nextStatus: TaskStatus,
+) {
+  return allowedTaskTransitions[
+    currentStatus
+  ].includes(nextStatus)
+}
 
 export async function createTask(
   ownerId: string,
@@ -24,7 +48,7 @@ export async function createTask(
     }
   }
 
-  return prisma.task.create({
+  const task = await prisma.task.create({
     data: {
       title: input.title,
       description: input.description,
@@ -49,6 +73,15 @@ export async function createTask(
       updatedAt: true,
     },
   })
+
+  await createNotification(
+    ownerId,
+    'Task created',
+    `The task "${task.title}" has been created successfully.`,
+    'INFO',
+  )
+
+  return task
 }
 
 export async function getTasks(ownerId: string) {
@@ -110,11 +143,27 @@ export async function updateTask(
     },
     select: {
       id: true,
+      title: true,
+      status: true,
     },
   })
 
   if (!existingTask) {
     return null
+  }
+
+  if (input.status !== undefined) {
+    if (
+      input.status !== existingTask.status &&
+      !isValidTaskStatusTransition(
+        existingTask.status,
+        input.status,
+      )
+    ) {
+      throw new Error(
+        'INVALID_TASK_STATUS_TRANSITION',
+      )
+    }
   }
 
   if (input.projectId) {
@@ -133,7 +182,7 @@ export async function updateTask(
     }
   }
 
-  return prisma.task.update({
+  const updatedTask = await prisma.task.update({
     where: {
       id: existingTask.id,
     },
@@ -141,20 +190,25 @@ export async function updateTask(
       ...(input.title !== undefined && {
         title: input.title,
       }),
+
       ...(input.description !== undefined && {
         description: input.description,
       }),
+
       ...(input.status !== undefined && {
         status: input.status,
       }),
+
       ...(input.priority !== undefined && {
         priority: input.priority,
       }),
+
       ...(input.dueDate !== undefined && {
         dueDate: input.dueDate
           ? new Date(input.dueDate)
           : null,
       }),
+
       ...(input.projectId !== undefined && {
         projectId: input.projectId,
       }),
@@ -172,6 +226,50 @@ export async function updateTask(
       updatedAt: true,
     },
   })
+
+  if (
+    input.status !== undefined &&
+    input.status !== existingTask.status
+  ) {
+    const statusNotifications: Record<
+      TaskStatus,
+      {
+        title: string
+        message: string
+        type: 'INFO' | 'SUCCESS'
+      }
+    > = {
+      TODO: {
+        title: 'Task moved back to to do',
+        message: `The task "${updatedTask.title}" has been moved back to to do.`,
+        type: 'INFO',
+      },
+
+      IN_PROGRESS: {
+        title: 'Task in progress',
+        message: `The task "${updatedTask.title}" is now in progress.`,
+        type: 'INFO',
+      },
+
+      COMPLETED: {
+        title: 'Task completed',
+        message: `The task "${updatedTask.title}" has been completed successfully.`,
+        type: 'SUCCESS',
+      },
+    }
+
+    const notification =
+      statusNotifications[input.status]
+
+    await createNotification(
+      ownerId,
+      notification.title,
+      notification.message,
+      notification.type,
+    )
+  }
+
+  return updatedTask
 }
 
 export async function deleteTask(

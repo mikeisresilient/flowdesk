@@ -7,7 +7,19 @@ import {
   MessageSquare,
   Trash2,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+import {
+  deleteNotification,
+  getNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+  type Notification as ApiNotification,
+  type NotificationType as ApiNotificationType,
+} from '../../services/notificationService'
 
 type NotificationType =
   | 'task'
@@ -16,7 +28,7 @@ type NotificationType =
   | 'system'
 
 type Notification = {
-  id: number
+  id: string
   title: string
   description: string
   time: string
@@ -24,73 +36,171 @@ type Notification = {
   read: boolean
 }
 
-const initialNotifications: Notification[] = [
-  {
-    id: 1,
-    title: 'Task assigned to you',
-    description:
-      'You have been assigned "Design homepage wireframe" in Website Redesign.',
-    time: '10 minutes ago',
-    type: 'task',
-    read: false,
-  },
-  {
-    id: 2,
-    title: 'Project deadline approaching',
-    description:
-      'Website Redesign is due in 8 days. Your current progress is 72%.',
-    time: '1 hour ago',
-    type: 'project',
-    read: false,
-  },
-  {
-    id: 3,
-    title: 'New team message',
-    description:
-      'John sent you a message about the upcoming design review.',
-    time: '2 hours ago',
-    type: 'message',
-    read: false,
-  },
-  {
-    id: 4,
-    title: 'Task completed',
-    description:
-      'The "Update client dashboard" task has been marked as completed.',
-    time: 'Yesterday',
-    type: 'task',
-    read: true,
-  },
-  {
-    id: 5,
-    title: 'System update',
-    description:
-      'FlowDesk has been updated with improvements to your workspace.',
-    time: 'Yesterday',
-    type: 'system',
-    read: true,
-  },
-  {
-    id: 6,
-    title: 'Project status changed',
-    description:
-      'Mobile App has been moved to At risk. Review the project timeline.',
-    time: '2 days ago',
-    type: 'project',
-    read: true,
-  },
-]
+function formatRelativeTime(
+  createdAt: string,
+) {
+  const createdDate = new Date(createdAt)
+  const now = new Date()
 
-function Notifications() {
-  const [notifications, setNotifications] = useState(
-    initialNotifications,
+  const difference =
+    now.getTime() - createdDate.getTime()
+
+  const seconds = Math.floor(
+    difference / 1000,
   )
 
-  const [filter, setFilter] = useState<'All' | 'Unread'>('All')
+  if (seconds < 60) {
+    return 'Just now'
+  }
 
-  const unreadCount = notifications.filter(
-    (notification) => !notification.read,
-  ).length
+  const minutes = Math.floor(
+    seconds / 60,
+  )
+
+  if (minutes < 60) {
+    return `${minutes} ${
+      minutes === 1 ? 'minute' : 'minutes'
+    } ago`
+  }
+
+  const hours = Math.floor(
+    minutes / 60,
+  )
+
+  if (hours < 24) {
+    return `${hours} ${
+      hours === 1 ? 'hour' : 'hours'
+    } ago`
+  }
+
+  const days = Math.floor(
+    hours / 24,
+  )
+
+  if (days < 7) {
+    return `${days} ${
+      days === 1 ? 'day' : 'days'
+    } ago`
+  }
+
+  return createdDate.toLocaleDateString(
+    undefined,
+    {
+      month: 'short',
+      day: 'numeric',
+      year:
+        createdDate.getFullYear() !==
+        now.getFullYear()
+          ? 'numeric'
+          : undefined,
+    },
+  )
+}
+
+function mapNotificationType(
+  type: ApiNotificationType,
+): NotificationType {
+  switch (type) {
+    case 'SUCCESS':
+      return 'task'
+
+    case 'WARNING':
+      return 'project'
+
+    case 'ERROR':
+      return 'system'
+
+    case 'INFO':
+    default:
+      return 'system'
+  }
+}
+
+function mapNotification(
+  notification: ApiNotification,
+): Notification {
+  return {
+    id: notification.id,
+    title: notification.title,
+    description: notification.message,
+    time: formatRelativeTime(
+      notification.createdAt,
+    ),
+    type: mapNotificationType(
+      notification.type,
+    ),
+    read: notification.isRead,
+  }
+}
+
+function Notifications() {
+  const [notifications, setNotifications] =
+    useState<Notification[]>([])
+
+  const [filter, setFilter] = useState<
+    'All' | 'Unread'
+  >('All')
+
+  const [isLoading, setIsLoading] =
+    useState(true)
+
+  const [error, setError] =
+    useState<string | null>(null)
+
+  const [isMarkingAll, setIsMarkingAll] =
+    useState(false)
+
+  const [processingIds, setProcessingIds] =
+    useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadNotifications() {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        const response =
+          await getNotifications()
+
+        if (!isMounted) {
+          return
+        }
+
+        setNotifications(
+          response.notifications.map(
+            mapNotification,
+          ),
+        )
+      } catch (error) {
+        if (!isMounted) {
+          return
+        }
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to load notifications',
+        )
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadNotifications()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const unreadCount =
+    notifications.filter(
+      (notification) => !notification.read,
+    ).length
 
   const filteredNotifications = useMemo(() => {
     if (filter === 'Unread') {
@@ -102,32 +212,117 @@ function Notifications() {
     return notifications
   }, [filter, notifications])
 
-  const markAsRead = (id: number) => {
-    setNotifications((current) =>
-      current.map((notification) =>
-        notification.id === id
-          ? { ...notification, read: true }
-          : notification,
-      ),
-    )
+  const setProcessing = (
+    id: string,
+    processing: boolean,
+  ) => {
+    setProcessingIds((current) => {
+      const next = new Set(current)
+
+      if (processing) {
+        next.add(id)
+      } else {
+        next.delete(id)
+      }
+
+      return next
+    })
   }
 
-  const markAllAsRead = () => {
-    setNotifications((current) =>
-      current.map((notification) => ({
-        ...notification,
-        read: true,
-      })),
-    )
+  const markAsRead = async (id: string) => {
+    if (processingIds.has(id)) {
+      return
+    }
+
+    try {
+      setProcessing(id, true)
+
+      await markNotificationAsRead(id)
+
+      setNotifications((current) =>
+        current.map((notification) =>
+          notification.id === id
+            ? {
+                ...notification,
+                read: true,
+              }
+            : notification,
+        ),
+      )
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to mark notification as read',
+      )
+    } finally {
+      setProcessing(id, false)
+    }
   }
 
-  const removeNotification = (id: number) => {
-    setNotifications((current) =>
-      current.filter((notification) => notification.id !== id),
-    )
+  const markAllAsRead = async () => {
+    if (
+      unreadCount === 0 ||
+      isMarkingAll
+    ) {
+      return
+    }
+
+    try {
+      setIsMarkingAll(true)
+      setError(null)
+
+      await markAllNotificationsAsRead()
+
+      setNotifications((current) =>
+        current.map((notification) => ({
+          ...notification,
+          read: true,
+        })),
+      )
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to mark notifications as read',
+      )
+    } finally {
+      setIsMarkingAll(false)
+    }
   }
 
-  const getNotificationIcon = (type: NotificationType) => {
+  const removeNotification = async (
+    id: string,
+  ) => {
+    if (processingIds.has(id)) {
+      return
+    }
+
+    try {
+      setProcessing(id, true)
+
+      await deleteNotification(id)
+
+      setNotifications((current) =>
+        current.filter(
+          (notification) =>
+            notification.id !== id,
+        ),
+      )
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to remove notification',
+      )
+    } finally {
+      setProcessing(id, false)
+    }
+  }
+
+  const getNotificationIcon = (
+    type: NotificationType,
+  ) => {
     switch (type) {
       case 'task':
         return <Check size={19} />
@@ -146,7 +341,9 @@ function Notifications() {
     }
   }
 
-  const getNotificationIconStyles = (type: NotificationType) => {
+  const getNotificationIconStyles = (
+    type: NotificationType,
+  ) => {
     switch (type) {
       case 'task':
         return 'bg-green-50 text-green-600'
@@ -195,7 +392,10 @@ function Notifications() {
         {unreadCount > 0 && (
           <button
             type="button"
-            onClick={markAllAsRead}
+            onClick={() => {
+              void markAllAsRead()
+            }}
+            disabled={isMarkingAll}
             className="
               inline-flex
               w-full
@@ -217,14 +417,25 @@ function Notifications() {
               focus:outline-none
               focus:ring-4
               focus:ring-[#F5C542]/20
+              disabled:cursor-not-allowed
+              disabled:opacity-60
               sm:w-auto
             "
           >
             <CheckCheck size={17} />
-            Mark all as read
+            {isMarkingAll
+              ? 'Marking...'
+              : 'Mark all as read'}
           </button>
         )}
       </div>
+
+      {/* Error */}
+      {error && (
+        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Filters */}
       <section className="mt-8 min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -238,7 +449,9 @@ function Notifications() {
               type="button"
               role="tab"
               aria-selected={filter === 'All'}
-              onClick={() => setFilter('All')}
+              onClick={() =>
+                setFilter('All')
+              }
               className={`
                 flex-1
                 rounded-lg
@@ -264,8 +477,12 @@ function Notifications() {
             <button
               type="button"
               role="tab"
-              aria-selected={filter === 'Unread'}
-              onClick={() => setFilter('Unread')}
+              aria-selected={
+                filter === 'Unread'
+              }
+              onClick={() =>
+                setFilter('Unread')
+              }
               className={`
                 flex-1
                 rounded-lg
@@ -286,6 +503,7 @@ function Notifications() {
               `}
             >
               Unread
+
               {unreadCount > 0 && (
                 <span className="ml-2 text-[#B38708]">
                   {unreadCount}
@@ -305,148 +523,188 @@ function Notifications() {
 
       {/* Notifications */}
       <section className="mt-6 min-w-0">
-        {filteredNotifications.length > 0 ? (
+        {isLoading ? (
+          <div className="rounded-2xl border border-gray-200 bg-white px-5 py-16 text-center shadow-sm">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#F5C542]" />
+
+            <p className="mt-5 text-sm font-semibold text-gray-600">
+              Loading notifications...
+            </p>
+          </div>
+        ) : filteredNotifications.length > 0 ? (
           <div className="space-y-3">
-            {filteredNotifications.map((notification) => (
-              <article
-                key={notification.id}
-                className={`
-                  min-w-0
-                  rounded-2xl
-                  border
-                  p-4
-                  shadow-sm
-                  transition
-                  sm:p-5
-                  ${
-                    notification.read
-                      ? 'border-gray-200 bg-white'
-                      : 'border-[#E9D889] bg-[#FFFDF3]'
-                  }
-                `}
-              >
-                <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-                  {/* Icon */}
-                  <div
+            {filteredNotifications.map(
+              (notification) => {
+                const isProcessing =
+                  processingIds.has(
+                    notification.id,
+                  )
+
+                return (
+                  <article
+                    key={notification.id}
                     className={`
-                      flex
-                      h-10
-                      w-10
-                      shrink-0
-                      items-center
-                      justify-center
-                      rounded-xl
-                      sm:h-11
-                      sm:w-11
-                      ${getNotificationIconStyles(
-                        notification.type,
-                      )}
+                      min-w-0
+                      rounded-2xl
+                      border
+                      p-4
+                      shadow-sm
+                      transition
+                      sm:p-5
+                      ${
+                        notification.read
+                          ? 'border-gray-200 bg-white'
+                          : 'border-[#E9D889] bg-[#FFFDF3]'
+                      }
                     `}
                   >
-                    {getNotificationIcon(notification.type)}
-                  </div>
-
-                  {/* Content */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                      <div className="min-w-0">
-                        <div className="flex min-w-0 items-center gap-2">
-                          {!notification.read && (
-                            <span
-                              aria-label="Unread"
-                              className="h-2 w-2 shrink-0 rounded-full bg-[#D9A514]"
-                            />
+                    <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                      {/* Icon */}
+                      <div
+                        className={`
+                          flex
+                          h-10
+                          w-10
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-xl
+                          sm:h-11
+                          sm:w-11
+                          ${getNotificationIconStyles(
+                            notification.type,
                           )}
+                        `}
+                      >
+                        {getNotificationIcon(
+                          notification.type,
+                        )}
+                      </div>
 
-                          <h2
-                            className={`
-                              min-w-0
-                              break-words
-                              text-sm
-                              leading-6
-                              ${
-                                notification.read
-                                  ? 'font-semibold text-gray-700'
-                                  : 'font-bold text-[#18181B]'
+                      {/* Content */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                          <div className="min-w-0">
+                            <div className="flex min-w-0 items-center gap-2">
+                              {!notification.read && (
+                                <span
+                                  aria-label="Unread"
+                                  className="h-2 w-2 shrink-0 rounded-full bg-[#D9A514]"
+                                />
+                              )}
+
+                              <h2
+                                className={`
+                                  min-w-0
+                                  break-words
+                                  text-sm
+                                  leading-6
+                                  ${
+                                    notification.read
+                                      ? 'font-semibold text-gray-700'
+                                      : 'font-bold text-[#18181B]'
+                                  }
+                                `}
+                              >
+                                {notification.title}
+                              </h2>
+                            </div>
+
+                            <p className="mt-1 break-words text-sm leading-6 text-gray-500">
+                              {
+                                notification.description
                               }
-                            `}
-                          >
-                            {notification.title}
-                          </h2>
+                            </p>
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-gray-400">
+                            <Clock3 size={13} />
+                            {notification.time}
+                          </div>
                         </div>
 
-                        <p className="mt-1 break-words text-sm leading-6 text-gray-500">
-                          {notification.description}
-                        </p>
-                      </div>
+                        {/* Actions */}
+                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                          {!notification.read && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void markAsRead(
+                                  notification.id,
+                                )
+                              }}
+                              disabled={
+                                isProcessing
+                              }
+                              className="
+                                inline-flex
+                                items-center
+                                gap-1.5
+                                rounded-lg
+                                px-3
+                                py-2
+                                text-xs
+                                font-bold
+                                text-[#806207]
+                                transition
+                                hover:bg-[#FFF4C7]
+                                focus:outline-none
+                                focus:ring-2
+                                focus:ring-[#F5C542]
+                                disabled:cursor-not-allowed
+                                disabled:opacity-50
+                              "
+                            >
+                              <Check size={14} />
 
-                      <div className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-gray-400">
-                        <Clock3 size={13} />
-                        {notification.time}
+                              {isProcessing
+                                ? 'Updating...'
+                                : 'Mark as read'}
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void removeNotification(
+                                notification.id,
+                              )
+                            }}
+                            disabled={
+                              isProcessing
+                            }
+                            className="
+                              inline-flex
+                              items-center
+                              gap-1.5
+                              rounded-lg
+                              px-3
+                              py-2
+                              text-xs
+                              font-bold
+                              text-gray-400
+                              transition
+                              hover:bg-red-50
+                              hover:text-red-600
+                              focus:outline-none
+                              focus:ring-2
+                              focus:ring-red-200
+                              disabled:cursor-not-allowed
+                              disabled:opacity-50
+                            "
+                          >
+                            <Trash2 size={14} />
+                            {isProcessing
+                              ? 'Removing...'
+                              : 'Remove'}
+                          </button>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Actions */}
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      {!notification.read && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            markAsRead(notification.id)
-                          }
-                          className="
-                            inline-flex
-                            items-center
-                            gap-1.5
-                            rounded-lg
-                            px-3
-                            py-2
-                            text-xs
-                            font-bold
-                            text-[#806207]
-                            transition
-                            hover:bg-[#FFF4C7]
-                            focus:outline-none
-                            focus:ring-2
-                            focus:ring-[#F5C542]
-                          "
-                        >
-                          <Check size={14} />
-                          Mark as read
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          removeNotification(notification.id)
-                        }
-                        className="
-                          inline-flex
-                          items-center
-                          gap-1.5
-                          rounded-lg
-                          px-3
-                          py-2
-                          text-xs
-                          font-bold
-                          text-gray-400
-                          transition
-                          hover:bg-red-50
-                          hover:text-red-600
-                          focus:outline-none
-                          focus:ring-2
-                          focus:ring-red-200
-                        "
-                      >
-                        <Trash2 size={14} />
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))}
+                  </article>
+                )
+              },
+            )}
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-5 py-16 text-center">
@@ -466,29 +724,32 @@ function Notifications() {
                 : 'New activity and updates will appear here.'}
             </p>
 
-            {filter === 'Unread' && notifications.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setFilter('All')}
-                className="
-                  mt-5
-                  rounded-xl
-                  bg-[#18181B]
-                  px-4
-                  py-2.5
-                  text-sm
-                  font-bold
-                  text-white
-                  transition
-                  hover:bg-black
-                  focus:outline-none
-                  focus:ring-4
-                  focus:ring-gray-300
-                "
-              >
-                View all notifications
-              </button>
-            )}
+            {filter === 'Unread' &&
+              notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFilter('All')
+                  }
+                  className="
+                    mt-5
+                    rounded-xl
+                    bg-[#18181B]
+                    px-4
+                    py-2.5
+                    text-sm
+                    font-bold
+                    text-white
+                    transition
+                    hover:bg-black
+                    focus:outline-none
+                    focus:ring-4
+                    focus:ring-gray-300
+                  "
+                >
+                  View all notifications
+                </button>
+              )}
           </div>
         )}
       </section>

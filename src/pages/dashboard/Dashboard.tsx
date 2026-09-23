@@ -7,8 +7,16 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import StatCard from '../../components/ui/StatCard'
-import { getProjects, type Project } from '../../services/projectService'
-import { getTasks, type Task } from '../../services/taskService'
+import {
+  getProjects,
+  type Project,
+} from '../../services/projectService'
+import {
+  getTasks,
+  type Task,
+} from '../../services/taskService'
+import { getDashboardStats } from '../../services/dashboardService'
+import type { DashboardStats } from '../../services/dashboardService'
 import { useAuth } from '../../context/useAuth'
 
 function getGreeting() {
@@ -39,20 +47,32 @@ function formatTimeAgo(dateString: string) {
   const now = new Date()
   const difference = now.getTime() - date.getTime()
 
-  const minutes = Math.floor(difference / (1000 * 60))
-  const hours = Math.floor(difference / (1000 * 60 * 60))
-  const days = Math.floor(difference / (1000 * 60 * 60 * 24))
+  const minutes = Math.floor(
+    difference / (1000 * 60),
+  )
+
+  const hours = Math.floor(
+    difference / (1000 * 60 * 60),
+  )
+
+  const days = Math.floor(
+    difference / (1000 * 60 * 60 * 24),
+  )
 
   if (minutes < 1) {
     return 'Just now'
   }
 
   if (minutes < 60) {
-    return `${minutes} minute${minutes === 1 ? '' : 's'} ago`
+    return `${minutes} minute${
+      minutes === 1 ? '' : 's'
+    } ago`
   }
 
   if (hours < 24) {
-    return `${hours} hour${hours === 1 ? '' : 's'} ago`
+    return `${hours} hour${
+      hours === 1 ? '' : 's'
+    } ago`
   }
 
   if (days === 1) {
@@ -74,6 +94,9 @@ function Dashboard() {
 
   const [projects, setProjects] = useState<Project[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
+  const [dashboardStats, setDashboardStats] =
+    useState<DashboardStats | null>(null)
+
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -85,7 +108,12 @@ function Dashboard() {
       setError('')
 
       try {
-        const [projectData, taskData] = await Promise.all([
+        const [
+          dashboardData,
+          projectData,
+          taskData,
+        ] = await Promise.all([
+          getDashboardStats(),
           getProjects(),
           getTasks(),
         ])
@@ -94,6 +122,7 @@ function Dashboard() {
           return
         }
 
+        setDashboardStats(dashboardData.stats)
         setProjects(projectData)
         setTasks(taskData)
       } catch {
@@ -119,39 +148,53 @@ function Dashboard() {
   }, [])
 
   const statistics = useMemo(() => {
-    const totalProjects = projects.length
+    if (!dashboardStats) {
+      return {
+        totalProjects: 0,
+        activeTasks: 0,
+        completedTasks: 0,
+        overallProgress: 0,
+        completionRate: 0,
+      }
+    }
 
-    const activeTasks = tasks.filter(
-      (task) => task.status !== 'COMPLETED',
-    ).length
+    const totalProjects =
+      dashboardStats.projects.total
 
-    const completedTasks = tasks.filter(
-      (task) => task.status === 'COMPLETED',
-    ).length
+    const completedTasks =
+      dashboardStats.tasks.completed
 
-    const overallProgress =
-      totalProjects > 0
+    const totalTasks =
+      dashboardStats.tasks.total
+
+    const completionRate =
+      totalTasks > 0
         ? Math.round(
-            projects.reduce(
-              (total, project) => total + project.progress,
-              0,
-            ) / totalProjects,
+            (completedTasks / totalTasks) * 100,
           )
         : 0
 
-    const completionRate =
-      tasks.length > 0
-        ? Math.round((completedTasks / tasks.length) * 100)
+    const overallProgress =
+      projects.length > 0
+        ? Math.round(
+            projects.reduce(
+              (total, project) =>
+                total + project.progress,
+              0,
+            ) / projects.length,
+          )
         : 0
 
     return {
       totalProjects,
-      activeTasks,
+      activeTasks:
+        dashboardStats.tasks.todo +
+        dashboardStats.tasks.inProgress,
       completedTasks,
       overallProgress,
       completionRate,
     }
-  }, [projects, tasks])
+  }, [dashboardStats, projects])
 
   const stats = [
     {
@@ -191,6 +234,7 @@ function Dashboard() {
         status: task.status,
         createdAt: task.createdAt,
       })),
+
       ...projects.map((project) => ({
         id: `project-${project.id}`,
         type: 'project' as const,
@@ -245,7 +289,11 @@ function Dashboard() {
           <StatCard
             key={stat.title}
             {...stat}
-            value={isLoading ? '...' : stat.value}
+            value={
+              isLoading
+                ? '...'
+                : stat.value
+            }
           />
         ))}
       </section>
@@ -267,7 +315,7 @@ function Dashboard() {
 
             <Link
               to="/dashboard/projects"
-              className="shrink-0 text-sm font-bold text-[#9A7608] transition-colors hover:text-[#705604] focus:outline-none focus:ring-2 focus:ring-[#F5C542] focus:ring-offset-2 rounded"
+              className="shrink-0 rounded text-sm font-bold text-[#9A7608] transition-colors hover:text-[#705604] focus:outline-none focus:ring-2 focus:ring-[#F5C542] focus:ring-offset-2"
             >
               View all
             </Link>
@@ -277,7 +325,10 @@ function Dashboard() {
             {isLoading ? (
               <>
                 {[1, 2, 3].map((item) => (
-                  <div key={item} className="animate-pulse">
+                  <div
+                    key={item}
+                    className="animate-pulse"
+                  >
                     <div className="flex items-start justify-between gap-4">
                       <div className="w-full">
                         <div className="h-4 w-40 rounded bg-gray-200" />
@@ -307,13 +358,18 @@ function Dashboard() {
               </div>
             ) : (
               recentProjects.map((project) => {
-                const projectTasks = tasks.filter(
-                  (task) => task.projectId === project.id,
-                )
+                const projectTasks =
+                  tasks.filter(
+                    (task) =>
+                      task.projectId ===
+                      project.id,
+                  )
 
                 const completedProjectTasks =
                   projectTasks.filter(
-                    (task) => task.status === 'COMPLETED',
+                    (task) =>
+                      task.status ===
+                      'COMPLETED',
                   ).length
 
                 return (
@@ -338,7 +394,9 @@ function Dashboard() {
                     <div
                       className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100"
                       role="progressbar"
-                      aria-valuenow={project.progress}
+                      aria-valuenow={
+                        project.progress
+                      }
                       aria-valuemin={0}
                       aria-valuemax={100}
                       aria-label={`${project.name} progress`}
@@ -412,9 +470,11 @@ function Dashboard() {
                 >
                   <div
                     className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
-                      activity.type === 'project'
+                      activity.type ===
+                      'project'
                         ? 'bg-[#F5C542]'
-                        : activity.status === 'COMPLETED'
+                        : activity.status ===
+                            'COMPLETED'
                           ? 'bg-green-500'
                           : 'bg-gray-400'
                     }`}
@@ -422,7 +482,8 @@ function Dashboard() {
 
                   <div>
                     <p className="text-sm leading-5 text-gray-700">
-                      {activity.type === 'project' ? (
+                      {activity.type ===
+                      'project' ? (
                         <>
                           You created project{' '}
                           <strong className="font-bold text-gray-900">
@@ -442,7 +503,9 @@ function Dashboard() {
                     </p>
 
                     <p className="mt-1 text-xs text-gray-400">
-                      {formatTimeAgo(activity.createdAt)}
+                      {formatTimeAgo(
+                        activity.createdAt,
+                      )}
                     </p>
                   </div>
                 </div>

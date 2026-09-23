@@ -201,6 +201,17 @@ export async function updateTaskController(
       task,
     })
   } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === 'INVALID_TASK_STATUS_TRANSITION'
+    ) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid task status transition',
+      })
+      return
+    }
+
     console.error('Task update error:', error)
 
     res.status(500).json({

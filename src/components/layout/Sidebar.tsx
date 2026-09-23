@@ -6,6 +6,7 @@ import {
   Home,
   LogOut,
   Settings,
+  ShieldCheck,
   X,
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
@@ -44,7 +45,10 @@ const navigation = [
   },
 ]
 
-function Sidebar({ isOpen, onClose }: SidebarProps) {
+function Sidebar({
+  isOpen,
+  onClose,
+}: SidebarProps) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -54,8 +58,11 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
     navigate('/login', { replace: true })
   }
 
-  const displayName = user?.name || 'FlowDesk User'
-  const displayEmail = user?.email || 'Personal workspace'
+  const displayName =
+    user?.name || 'FlowDesk User'
+
+  const displayEmail =
+    user?.email || 'Personal workspace'
 
   const initials = displayName
     .split(' ')
@@ -64,10 +71,14 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
     .slice(0, 2)
     .toUpperCase()
 
+  const isAdmin = user?.role === 'ADMIN'
+
   return (
     <aside
       className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-gray-200 bg-white transition-transform duration-300 lg:translate-x-0 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
+        isOpen
+          ? 'translate-x-0'
+          : '-translate-x-full'
       }`}
     >
       <div className="flex h-[72px] items-center justify-between border-b border-gray-200 px-5">
@@ -81,7 +92,10 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
           </span>
 
           <span className="text-xl font-bold tracking-tight text-[#171717]">
-            Flow<span className="text-[#D9A514]">Desk</span>
+            Flow
+            <span className="text-[#D9A514]">
+              Desk
+            </span>
           </span>
         </NavLink>
 
@@ -111,7 +125,9 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={item.to === '/dashboard'}
+                end={
+                  item.to === '/dashboard'
+                }
                 onClick={onClose}
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
@@ -127,6 +143,29 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
             )
           })}
         </div>
+
+        {isAdmin && (
+          <>
+            <p className="mt-8 px-3 pb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-400">
+              Administration
+            </p>
+
+            <NavLink
+              to="/dashboard/admin/users"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                  isActive
+                    ? 'bg-[#FFF4C7] text-[#806313]'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`
+              }
+            >
+              <ShieldCheck size={18} />
+              Users
+            </NavLink>
+          </>
+        )}
 
         <p className="mt-8 px-3 pb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-400">
           Account
@@ -171,7 +210,10 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
             onClick={handleLogout}
             className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#F5C542] focus:ring-offset-2"
           >
-            <LogOut size={16} aria-hidden="true" />
+            <LogOut
+              size={16}
+              aria-hidden="true"
+            />
             Sign out
           </button>
         </div>

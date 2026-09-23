@@ -7,6 +7,9 @@ import rateLimit from 'express-rate-limit'
 import authRoutes from './routes/authRoutes.js'
 import projectRoutes from './routes/projectRoutes.js'
 import taskRoutes from './routes/taskRoutes.js'
+import dashboardRoutes from './routes/dashboardRoutes.js'
+import notificationRoutes from './routes/notificationRoutes.js'
+import adminRoutes from './routes/adminRoutes.js'
 
 const app = express()
 
@@ -45,6 +48,9 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/projects', projectRoutes)
 app.use('/api/tasks', taskRoutes)
+app.use('/api/dashboard', dashboardRoutes)
+app.use('/api/notifications', notificationRoutes)
+app.use('/api/admin', adminRoutes)
 
 app.use((_req, res) => {
   res.status(404).json({

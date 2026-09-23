@@ -15,14 +15,14 @@ export const createProjectSchema = z.object({
 
   status: z
     .enum(['PLANNING', 'ACTIVE', 'COMPLETED', 'ON_HOLD'])
-    .optional(),
+    .default('PLANNING'),
 
   progress: z
     .number()
     .int('Progress must be a whole number')
     .min(0, 'Progress cannot be below 0')
     .max(100, 'Progress cannot exceed 100')
-    .optional(),
+    .default(0),
 })
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>

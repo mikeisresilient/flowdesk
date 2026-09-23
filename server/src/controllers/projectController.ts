@@ -6,16 +6,58 @@ import {
 } from '../schemas/projectSchemas.js'
 import {
   createProject,
-  getProjects,
-  getProjectById,
-  updateProject,
   deleteProject,
+  getProjectById,
+  getProjects,
+  updateProject,
 } from '../services/projectService.js'
+
+function getAuthenticatedUserId(
+  req: AuthenticatedRequest,
+  res: Response,
+) {
+  if (!req.user) {
+    res.status(401).json({
+      success: false,
+      message: 'Authentication required',
+    })
+
+    return null
+  }
+
+  return req.user.id
+}
+
+function getProjectId(
+  req: AuthenticatedRequest,
+  res: Response,
+) {
+  const projectId = Array.isArray(req.params.id)
+    ? req.params.id[0]
+    : req.params.id
+
+  if (!projectId) {
+    res.status(400).json({
+      success: false,
+      message: 'Project ID is required',
+    })
+
+    return null
+  }
+
+  return projectId
+}
 
 export async function createProjectController(
   req: AuthenticatedRequest,
   res: Response,
 ) {
+  const userId = getAuthenticatedUserId(req, res)
+
+  if (!userId) {
+    return
+  }
+
   const parsed = createProjectSchema.safeParse(req.body)
 
   if (!parsed.success) {
@@ -24,19 +66,15 @@ export async function createProjectController(
       message: 'Validation failed',
       errors: parsed.error.flatten().fieldErrors,
     })
-    return
-  }
 
-  if (!req.user) {
-    res.status(401).json({
-      success: false,
-      message: 'Authentication required',
-    })
     return
   }
 
   try {
-    const project = await createProject(req.user.id, parsed.data)
+    const project = await createProject(
+      userId,
+      parsed.data,
+    )
 
     res.status(201).json({
       success: true,
@@ -56,16 +94,14 @@ export async function getProjectsController(
   req: AuthenticatedRequest,
   res: Response,
 ) {
-  if (!req.user) {
-    res.status(401).json({
-      success: false,
-      message: 'Authentication required',
-    })
+  const userId = getAuthenticatedUserId(req, res)
+
+  if (!userId) {
     return
   }
 
   try {
-    const projects = await getProjects(req.user.id)
+    const projects = await getProjects(userId)
 
     res.status(200).json({
       success: true,
@@ -85,29 +121,21 @@ export async function getProjectByIdController(
   req: AuthenticatedRequest,
   res: Response,
 ) {
-  if (!req.user) {
-    res.status(401).json({
-      success: false,
-      message: 'Authentication required',
-    })
+  const userId = getAuthenticatedUserId(req, res)
+
+  if (!userId) {
     return
   }
 
-  const projectId = Array.isArray(req.params.id)
-    ? req.params.id[0]
-    : req.params.id
+  const projectId = getProjectId(req, res)
 
   if (!projectId) {
-    res.status(400).json({
-      success: false,
-      message: 'Project ID is required',
-    })
     return
   }
 
   try {
     const project = await getProjectById(
-      req.user.id,
+      userId,
       projectId,
     )
 
@@ -116,6 +144,7 @@ export async function getProjectByIdController(
         success: false,
         message: 'Project not found',
       })
+
       return
     }
 
@@ -137,23 +166,15 @@ export async function updateProjectController(
   req: AuthenticatedRequest,
   res: Response,
 ) {
-  if (!req.user) {
-    res.status(401).json({
-      success: false,
-      message: 'Authentication required',
-    })
+  const userId = getAuthenticatedUserId(req, res)
+
+  if (!userId) {
     return
   }
 
-  const projectId = Array.isArray(req.params.id)
-    ? req.params.id[0]
-    : req.params.id
+  const projectId = getProjectId(req, res)
 
   if (!projectId) {
-    res.status(400).json({
-      success: false,
-      message: 'Project ID is required',
-    })
     return
   }
 
@@ -165,12 +186,13 @@ export async function updateProjectController(
       message: 'Validation failed',
       errors: parsed.error.flatten().fieldErrors,
     })
+
     return
   }
 
   try {
     const project = await updateProject(
-      req.user.id,
+      userId,
       projectId,
       parsed.data,
     )
@@ -180,6 +202,7 @@ export async function updateProjectController(
         success: false,
         message: 'Project not found',
       })
+
       return
     }
 
@@ -201,29 +224,21 @@ export async function deleteProjectController(
   req: AuthenticatedRequest,
   res: Response,
 ) {
-  if (!req.user) {
-    res.status(401).json({
-      success: false,
-      message: 'Authentication required',
-    })
+  const userId = getAuthenticatedUserId(req, res)
+
+  if (!userId) {
     return
   }
 
-  const projectId = Array.isArray(req.params.id)
-    ? req.params.id[0]
-    : req.params.id
+  const projectId = getProjectId(req, res)
 
   if (!projectId) {
-    res.status(400).json({
-      success: false,
-      message: 'Project ID is required',
-    })
     return
   }
 
   try {
     const project = await deleteProject(
-      req.user.id,
+      userId,
       projectId,
     )
 
@@ -232,6 +247,7 @@ export async function deleteProjectController(
         success: false,
         message: 'Project not found',
       })
+
       return
     }
 

@@ -5,6 +5,7 @@ import {
   registerController,
 } from '../controllers/authController.js'
 import { requireAuth } from '../middleware/authMiddleware.js'
+import { requireRole } from '../middleware/roleMiddleware.js'
 import type { AuthenticatedRequest } from '../types/auth.js'
 
 const router = Router()
@@ -23,5 +24,17 @@ router.get('/me', requireAuth, async (req, res) => {
 })
 
 router.post('/logout', requireAuth, logoutController)
+
+router.get(
+  '/admin-test',
+  requireAuth,
+  requireRole('ADMIN'),
+  (_req, res) => {
+    res.status(200).json({
+      success: true,
+      message: 'Admin authorization successful',
+    })
+  },
+)
 
 export default router

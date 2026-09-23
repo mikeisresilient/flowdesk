@@ -25,9 +25,9 @@ export const createTaskSchema = z.object({
     .max(2000, 'Description must not exceed 2000 characters')
     .optional(),
 
-  status: taskStatusSchema.optional(),
+  status: taskStatusSchema.default('TODO'),
 
-  priority: taskPrioritySchema.optional(),
+  priority: taskPrioritySchema.default('MEDIUM'),
 
   dueDate: z
     .string()
