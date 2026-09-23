@@ -1,15 +1,21 @@
 import argon2 from 'argon2'
 import { createHmac, randomBytes } from 'node:crypto'
 import { prisma } from '../config/prisma.js'
-import type { LoginInput, RegisterInput } from '../schemas/authSchemas.js'
+import type {
+  LoginInput,
+  RegisterInput,
+} from '../schemas/authSchemas.js'
 
-const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 7
+const SESSION_DURATION_MS =
+  1000 * 60 * 60 * 24 * 7
 
 function hashSessionToken(token: string) {
   const sessionSecret = process.env.SESSION_SECRET
 
   if (!sessionSecret) {
-    throw new Error('SESSION_SECRET is not configured')
+    throw new Error(
+      'SESSION_SECRET is not configured',
+    )
   }
 
   return createHmac('sha256', sessionSecret)
@@ -21,18 +27,23 @@ function createSessionToken() {
   return randomBytes(32).toString('hex')
 }
 
-export async function registerUser(input: RegisterInput) {
-  const existingUser = await prisma.user.findUnique({
-    where: {
-      email: input.email,
-    },
-  })
+export async function registerUser(
+  input: RegisterInput,
+) {
+  const existingUser =
+    await prisma.user.findUnique({
+      where: {
+        email: input.email,
+      },
+    })
 
   if (existingUser) {
     throw new Error('EMAIL_ALREADY_EXISTS')
   }
 
-  const passwordHash = await argon2.hash(input.password)
+  const passwordHash = await argon2.hash(
+    input.password,
+  )
 
   const user = await prisma.user.create({
     data: {
@@ -44,13 +55,17 @@ export async function registerUser(input: RegisterInput) {
       id: true,
       name: true,
       email: true,
+      role: true,
     },
   })
 
   const sessionToken = createSessionToken()
-  const tokenHash = hashSessionToken(sessionToken)
-
-  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS)
+  const tokenHash = hashSessionToken(
+    sessionToken,
+  )
+  const expiresAt = new Date(
+    Date.now() + SESSION_DURATION_MS,
+  )
 
   const session = await prisma.session.create({
     data: {
@@ -67,7 +82,9 @@ export async function registerUser(input: RegisterInput) {
   }
 }
 
-export async function loginUser(input: LoginInput) {
+export async function loginUser(
+  input: LoginInput,
+) {
   const user = await prisma.user.findUnique({
     where: {
       email: input.email,
@@ -88,9 +105,12 @@ export async function loginUser(input: LoginInput) {
   }
 
   const sessionToken = createSessionToken()
-  const tokenHash = hashSessionToken(sessionToken)
-
-  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS)
+  const tokenHash = hashSessionToken(
+    sessionToken,
+  )
+  const expiresAt = new Date(
+    Date.now() + SESSION_DURATION_MS,
+  )
 
   const session = await prisma.session.create({
     data: {
@@ -105,13 +125,16 @@ export async function loginUser(input: LoginInput) {
       id: user.id,
       name: user.name,
       email: user.email,
+      role: user.role,
     },
     sessionToken,
     sessionId: session.id,
   }
 }
 
-export async function deleteSession(sessionId: string) {
+export async function deleteSession(
+  sessionId: string,
+) {
   await prisma.session.deleteMany({
     where: {
       id: sessionId,
