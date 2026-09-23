@@ -1,494 +1,718 @@
-**# FlowDesk**
+# FlowDesk
 
-FlowDesk is a responsive full stack project management web application built with React, TypeScript, Express, PostgreSQL, Prisma, and Tailwind CSS.
+FlowDesk is a responsive full stack project and internship management web application built with React, TypeScript, Express, PostgreSQL, Prisma, and Tailwind CSS.
 
-The application provides authenticated project and task management with persistent database storage, server side validation, session based authentication, protected API routes, and ownership checks.
+The application provides authenticated project and task management with persistent database storage, server side validation, session based authentication, role based authorization, protected API routes, ownership checks, notifications, dashboard statistics, and responsive user interfaces.
 
-**## Internship Objective**
+---
 
-**### Task 1: Responsive Web Application**
+## Internship Objective
+
+### Task 1: Responsive Web Application
 
 Build the front end foundation for a complete web application with public and authenticated views.
 
-**### Task 2: Full Stack Integration**
+### Task 2: Full Stack Integration
 
 Connect the application interface to secure server side workflows and persistent data.
 
 Task 2 focuses on:
 
-\- Authentication and sessions
+- Authentication and sessions
+- Database backed CRUD
+- Server side validation
+- Safe frontend API requests
+- Ownership checks
+- Role based authorization
+- Persistent data
+- Notifications
+- Reproducible project setup
+- Secure deployment considerations
 
-\- Database backed CRUD
+---
 
-\- Server side validation
+# Features
 
-\- Safe frontend API requests
+## Public Experience
 
-\- Ownership checks
+- Responsive landing page
+- Responsive navigation
+- Sign in
+- Create account
+- Forgot password interface
+- Responsive footer
+- Mobile navigation
+- 404 page
+
+## Authentication
+
+- User registration
+- User login
+- Server side credential validation
+- Argon2 password hashing
+- Database backed sessions
+- HttpOnly session cookies
+- HMAC SHA-256 session token hashing
+- Session expiration
+- Session restoration after page refresh
+- Logout
+- Protected frontend routes
+- Protected backend API routes
+- Authentication middleware
+- Role based authorization
 
-\- Persistent data
+## User Roles
 
-\- Reproducible project setup
+FlowDesk supports two application roles:
 
-**---**
+- `USER`
+- `ADMIN`
 
-**## Features**
+### USER
 
-**### Public experience**
+Normal authenticated users can:
 
-\- Responsive landing page
+- Manage their own projects
+- Manage their own tasks
+- View their dashboard
+- View their notifications
+- Update task and project statuses according to the defined workflow
+- Manage their account interface
 
-\- Responsive navigation
+### ADMIN
 
-\- Sign in
+Administrators have the same authenticated capabilities as normal users, plus access to administration functionality.
 
-\- Create account
+Administrators can:
 
-\- Forgot password interface
+- View registered users
+- View user roles
+- Promote users to administrator
+- Change users between `USER` and `ADMIN` roles
+- Access protected administrator endpoints
 
-\- Responsive footer
+Role checks are performed on the server.
 
-\- Mobile navigation
+Frontend visibility is not treated as an authorization boundary.
 
-**### Authentication**
+---
 
-\- User registration
+# Projects
 
-\- User login
+FlowDesk provides complete project management functionality.
 
-\- Server side credential validation
+Features include:
 
-\- Argon2 password hashing
+- Create projects
+- View projects
+- View individual projects
+- Edit projects
+- Delete projects
+- Project status management
+- Progress tracking
+- Server side validation
+- Database persistence
+- User ownership enforcement
+- Project status notifications
 
-\- Database backed sessions
+Supported project statuses:
 
-\- HttpOnly session cookies
+- `PLANNING`
+- `ACTIVE`
+- `COMPLETED`
+- `ON_HOLD`
 
-\- Session expiration
+Project progress is validated server side and must remain between `0` and `100`.
 
-\- Session restoration after page refresh
+---
 
-\- Logout
+# Tasks
 
-\- Protected frontend routes
+FlowDesk provides complete task management functionality.
 
-\- Protected backend API routes
+Features include:
 
-**### Projects**
+- Create tasks
+- View tasks
+- View individual tasks
+- Edit tasks
+- Delete tasks
+- Task status management
+- Task priority management
+- Due dates
+- Optional project assignment
+- Server side validation
+- Database persistence
+- User ownership enforcement
+- Project ownership validation when assigning tasks
+- Task status transition validation
+- Task status notifications
 
-\- Create projects
+Supported task statuses:
 
-\- View projects
+- `TODO`
+- `IN_PROGRESS`
+- `COMPLETED`
 
-\- View individual projects
+Supported priorities:
 
-\- Edit projects
+- `LOW`
+- `MEDIUM`
+- `HIGH`
 
-\- Delete projects
+---
 
-\- Project status management
+## Task Status Workflow
 
-\- Progress tracking
+Task status changes are validated on the server.
 
-\- Server side validation
+Allowed transitions are:
 
-\- Database persistence
+```text
+TODO
+  ↓
+IN_PROGRESS
+  ↓
+COMPLETED
+````
 
-\- User ownership enforcement
+The following recovery transition is also supported:
 
-**### Tasks**
+```text
+COMPLETED
+  ↓
+IN_PROGRESS
+```
 
-\- Create tasks
+And:
 
-\- View tasks
+```text
+IN_PROGRESS
+  ↓
+TODO
+```
 
-\- View individual tasks
+Invalid transitions are rejected.
 
-\- Edit tasks
+For example:
 
-\- Delete tasks
+```text
+TODO → COMPLETED
+```
 
-\- Task status management
+is rejected because a task must first move through `IN_PROGRESS`.
 
-\- Task priority management
+Likewise:
 
-\- Due dates
+```text
+COMPLETED → TODO
+```
 
-\- Optional project assignment
+is rejected.
 
-\- Server side validation
+The database remains unchanged when an invalid transition is rejected.
 
-\- Database persistence
+This workflow is enforced by backend service logic rather than frontend controls.
 
-\- User ownership enforcement
+---
 
-\- Project ownership validation when assigning tasks
+# Dashboard
 
-**### Dashboard**
+The authenticated dashboard uses real database backed data.
 
-\- Authenticated dashboard
+Dashboard functionality includes:
 
-\- Real project statistics
+* Total projects
+* Active projects
+* Completed projects
+* Total tasks
+* Completed tasks
+* Task completion statistics
+* Project progress
+* Recent projects
+* Recent activity
+* Loading states
+* Error states
+* Empty states
 
-\- Real task statistics
+Dashboard statistics are retrieved from the protected backend API.
 
-\- Project progress
+---
 
-\- Task completion statistics
+# Notifications
 
-\- Recent projects
+FlowDesk includes a persistent notification system backed by PostgreSQL.
 
-\- Recent activity
+Users can:
 
-\- Loading states
+* View notifications
+* Filter notifications
+* Mark individual notifications as read
+* Mark all notifications as read
+* Delete notifications
+* View unread notifications
+* View notification timestamps
 
-\- Error states
+Notifications are scoped to the authenticated user.
 
-\- Empty states
+A user cannot access another user's notifications.
 
-**### UX and accessibility**
+---
 
-\- Mobile responsive layouts
+## Automatic Notifications
 
-\- Tablet layouts
+The backend automatically creates notifications for important project and task events.
 
-\- Laptop layouts
+### Project notifications
 
-\- Desktop layouts
+Examples include:
 
-\- Large screen layouts
+```text
+Project created
+Project moved to planning
+Project active
+Project completed
+Project on hold
+```
 
-\- Keyboard friendly controls
+### Task notifications
 
-\- Visible focus states
+Examples include:
 
-\- Accessible form labels
+```text
+Task created
+Task in progress
+Task completed
+Task moved back to to do
+```
 
-\- ARIA attributes where appropriate
+Notifications are generated by backend services after successful operations.
 
-\- Loading states
+---
 
-\- Error states
+# Calendar
 
-\- Empty states
+The Calendar page uses real task data from the backend.
 
-\- Responsive tables and cards
+Tasks with due dates are displayed as calendar items.
 
-\- Accessible custom dropdown
+Calendar functionality includes:
 
-\- Responsive dashboard navigation
+* Task due dates
+* Task status indicators
+* Upcoming tasks
+* Real API data
+* Responsive calendar interface
 
-**---**
+There is currently no separate calendar event subsystem.
 
-**# Technology Stack**
+The Calendar therefore focuses on task based scheduling rather than independent calendar events.
 
-**## Frontend**
+---
 
-\- React 19
+# UX and Accessibility
 
-\- TypeScript
+FlowDesk was designed responsively from the beginning.
 
-\- Vite
+Supported layouts include:
 
-\- Tailwind CSS
+* Mobile phones
+* Tablets
+* Laptops
+* Desktops
+* Large screens
 
-\- React Router
+UX features include:
 
-\- Lucide React
+* Responsive navigation
+* Responsive sidebar
+* Responsive tables
+* Mobile cards
+* Loading states
+* Error states
+* Empty states
+* Accessible custom dropdowns
+* Keyboard friendly controls
+* Visible focus states
+* Accessible form labels
+* ARIA attributes where appropriate
+* Touch friendly controls
 
-**## Backend**
+---
 
-\- Node.js
+# Technology Stack
 
-\- Express
+## Frontend
 
-\- TypeScript
+* React 19
+* TypeScript
+* Vite
+* Tailwind CSS
+* React Router
+* Lucide React
 
-\- Zod
+## Backend
 
-\- Argon2
+* Node.js
+* Express
+* TypeScript
+* Zod
+* Argon2
+* Cookie Parser
+* Helmet
+* CORS
+* Express Rate Limit
 
-\- Cookie Parser
+## Database
 
-\- Helmet
+* PostgreSQL
+* Neon PostgreSQL
+* Prisma ORM
 
-\- CORS
+## Authentication
 
-\- Express Rate Limit
+* Database backed sessions
+* HttpOnly cookies
+* HMAC SHA-256 session token hashing
+* Argon2 password hashing
+* Session expiration
+* Server side authentication middleware
 
-**## Database**
+---
 
-\- PostgreSQL
-
-\- Neon PostgreSQL
-
-\- Prisma ORM
-
-**## Authentication**
-
-\- Database backed sessions
-
-\- HttpOnly cookies
-
-\- HMAC SHA-256 session token hashing
-
-\- Argon2 password hashing
-
-**---**
-
-**# Architecture**
+# Architecture
 
 FlowDesk uses a separated frontend and backend architecture.
 
-\`\`\`text
-
+```text
 flowdesk/
-
 │
-
-├── src/                       # React frontend
-
-│   ├── components/
-
-│   ├── context/
-
-│   ├── hooks/
-
-│   ├── layouts/
-
-│   ├── pages/
-
-│   ├── routes/
-
-│   ├── services/
-
-│   ├── types/
-
-│   └── utils/
-
+├── src/                         # React frontend
+│   ├── assets/
+│   ├── components/
+│   ├── context/
+│   ├── hooks/
+│   ├── layouts/
+│   ├── pages/
+│   ├── routes/
+│   ├── services/
+│   ├── types/
+│   └── utils/
 │
-
-├── server/                    # Express backend
-
-│   ├── prisma/
-
-│   │   ├── migrations/
-
-│   │   └── schema.prisma
-
-│   │
-
-│   └── src/
-
-│       ├── config/
-
-│       ├── controllers/
-
-│       ├── middleware/
-
-│       ├── routes/
-
-│       ├── schemas/
-
-│       ├── services/
-
-│       ├── types/
-
-│       └── server.ts
-
+├── server/                     # Express backend
+│   ├── prisma/
+│   │   ├── migrations/
+│   │   └── schema.prisma
+│   │
+│   └── src/
+│       ├── config/
+│       ├── controllers/
+│       ├── middleware/
+│       ├── routes/
+│       ├── schemas/
+│       ├── services/
+│       ├── types/
+│       └── server.ts
 │
-
+├── .env.example
+├── .gitignore
+├── package.json
 └── README.md
-
-\`\`\`\`
+```
 
 The frontend communicates with the backend through a centralized API service.
 
 The backend is responsible for:
 
-1\. Authentication
+1. Authentication
+2. Authorization
+3. Role checks
+4. Validation
+5. Database operations
+6. Ownership checks
+7. Session management
+8. Notifications
+9. Business workflow rules
 
-2\. Authorization
+The frontend is responsible for:
 
-3\. Validation
+1. User interface
+2. Client side interaction
+3. Route presentation
+4. Form interaction
+5. Loading states
+6. Error states
+7. Calling the backend API
 
-4\. Database operations
+The backend remains the source of truth for security and authorization.
 
-5\. Ownership checks
+---
 
-6\. Session management
-
-\---
-
-\# Database Schema
+# Database Schema
 
 The PostgreSQL database contains the following main models:
 
-\`\`\`text
-
+```text
 User
-
 Session
-
 Project
-
 Task
-
 Notification
+```
 
-\`\`\`
+## Relationships
 
-**### Relationships**
-
-\`\`\`text
-
+```text
 User
-
- ├── Sessions
-
- ├── Projects
-
- ├── Tasks
-
- └── Notifications
+ ├── Sessions
+ ├── Projects
+ ├── Tasks
+ └── Notifications
 
 Project
-
- └── Tasks
+ └── Tasks
 
 Task
+ └── optional Project
+```
 
- └── optional Project
+Projects and tasks contain an `ownerId` which is used by the backend to enforce ownership.
 
-\`\`\`
+Sessions belong to users and are automatically removed when their associated user is deleted.
 
-Projects and tasks contain an \`ownerId\` which is used by the backend to enforce ownership.
+Notifications belong to users and are scoped through `userId`.
 
-**---**
+---
 
-**# Routes**
+## Database Models
 
-**## Public routes**
+### User
 
-\| Route              | Description                 |
+The `User` model stores:
 
-\| ------------------ | --------------------------- |
+* Name
+* Email
+* Password hash
+* Role
+* Creation timestamp
+* Update timestamp
 
-\| \`/\`                | Landing page                |
+Supported roles:
 
-\| \`/login\`           | Sign in                     |
+```text
+USER
+ADMIN
+```
 
-\| \`/register\`        | Create account              |
+### Session
 
-\| \`/forgot-password\` | Password recovery interface |
+The `Session` model stores:
 
-**## Protected frontend routes**
+* Hashed session token
+* User ID
+* Expiration time
+* Creation timestamp
 
-\| Route                      | Description        |
+The raw authentication token is not stored in PostgreSQL.
 
-\| -------------------------- | ------------------ |
+### Project
 
-\| \`/dashboard\`               | Dashboard overview |
+The `Project` model stores:
 
-\| \`/dashboard/projects\`      | Project management |
+* Name
+* Description
+* Status
+* Progress
+* Owner ID
+* Creation timestamp
+* Update timestamp
 
-\| \`/dashboard/tasks\`         | Task management    |
+### Task
 
-\| \`/dashboard/calendar\`      | Calendar           |
+The `Task` model stores:
 
-\| \`/dashboard/notifications\` | Notifications      |
+* Title
+* Description
+* Status
+* Priority
+* Due date
+* Owner ID
+* Optional project ID
+* Creation timestamp
+* Update timestamp
 
-\| \`/dashboard/settings\`      | Account settings   |
+### Notification
 
-**---**
+The `Notification` model stores:
 
-**# API Endpoints**
+* Title
+* Message
+* Type
+* Read state
+* User ID
+* Creation timestamp
 
-**## Authentication**
+---
 
-\`\`\`text
+# Frontend Routes
 
-POST /api/auth/register
+## Public Routes
 
-POST /api/auth/login
+| Route              | Description                 |
+| ------------------ | --------------------------- |
+| `/`                | Landing page                |
+| `/login`           | Sign in                     |
+| `/register`        | Create account              |
+| `/forgot-password` | Password recovery interface |
 
-GET  /api/auth/me
+## Protected Routes
 
-POST /api/auth/logout
+| Route                      | Description                   |
+| -------------------------- | ----------------------------- |
+| `/dashboard`               | Dashboard overview            |
+| `/dashboard/projects`      | Project management            |
+| `/dashboard/tasks`         | Task management               |
+| `/dashboard/calendar`      | Calendar                      |
+| `/dashboard/notifications` | Notifications                 |
+| `/dashboard/settings`      | Account settings              |
+| `/dashboard/admin/users`   | Administrator user management |
 
-\`\`\`
+The administrator route is protected by both frontend role visibility and server side authorization.
 
-**## Projects**
+---
 
-\`\`\`text
+# API Endpoints
 
-POST   /api/projects
+All protected endpoints require a valid authenticated session unless otherwise stated.
 
-GET    /api/projects
+## Health
 
-GET    /api/projects/\:id
-
-PATCH  /api/projects/\:id
-
-DELETE /api/projects/\:id
-
-\`\`\`
-
-**## Tasks**
-
-\`\`\`text
-
-POST   /api/tasks
-
-GET    /api/tasks
-
-GET    /api/tasks/\:id
-
-PATCH  /api/tasks/\:id
-
-DELETE /api/tasks/\:id
-
-\`\`\`
-
-**## Health**
-
-\`\`\`text
-
+```text
 GET /api/health
+```
 
-\`\`\`
+Returns the current API health status.
 
-**---**
+---
 
-**# Security**
+## Authentication
+
+```text
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+POST /api/auth/logout
+GET  /api/auth/admin-test
+```
+
+`/api/auth/admin-test` is a protected administrator test endpoint used to verify server side role authorization.
+
+---
+
+# Project API
+
+```text
+POST   /api/projects
+GET    /api/projects
+GET    /api/projects/:id
+PATCH  /api/projects/:id
+DELETE /api/projects/:id
+```
+
+Project operations are scoped to the authenticated user.
+
+---
+
+# Task API
+
+```text
+POST   /api/tasks
+GET    /api/tasks
+GET    /api/tasks/:id
+PATCH  /api/tasks/:id
+DELETE /api/tasks/:id
+```
+
+Task operations are scoped to the authenticated user.
+
+Project assignments are also ownership checked.
+
+---
+
+# Dashboard API
+
+```text
+GET /api/dashboard
+```
+
+Returns authenticated dashboard statistics based on the current user's projects and tasks.
+
+---
+
+# Notification API
+
+```text
+GET    /api/notifications
+PATCH  /api/notifications/read-all
+PATCH  /api/notifications/:id/read
+DELETE /api/notifications/:id
+```
+
+Notification operations are scoped to the authenticated user.
+
+---
+
+# Administration API
+
+Administrator only endpoints:
+
+```text
+GET   /api/admin/users
+PATCH /api/admin/users/:id/role
+```
+
+These endpoints require:
+
+1. Authentication
+2. `ADMIN` role
+
+Normal users receive:
+
+```text
+403 Forbidden
+```
+
+when attempting to access administrator functionality.
+
+---
+
+# Security
 
 Security is implemented at the backend boundary rather than relying only on frontend controls.
 
-**## Password security**
+---
+
+## Password Security
 
 Passwords are never stored directly.
 
 Passwords are hashed using Argon2 before being stored in PostgreSQL.
 
-\`\`\`text
-
+```text
 Password
-
-   ↓
-
+   ↓
 Argon2
-
-   ↓
-
+   ↓
 passwordHash
-
-   ↓
-
+   ↓
 PostgreSQL
+```
 
-\`\`\`
+The API never returns password hashes to the frontend.
 
-**## Session security**
+---
+
+# Session Security
 
 Authentication uses database backed sessions.
 
@@ -498,51 +722,73 @@ The raw session token is not stored directly in the database.
 
 Instead, the backend stores an HMAC SHA-256 hash of the session token.
 
-\`\`\`text
-
+```text
 Browser
-
-   │
-
-   │ HttpOnly cookie
-
-   ▼
-
+   │
+   │ HttpOnly cookie
+   ▼
 Express API
-
-   │
-
-   │ HMAC SHA-256
-
-   ▼
-
+   │
+   │ HMAC SHA-256
+   ▼
 Session record
-
-   │
-
-   ▼
-
+   │
+   ▼
 Authenticated user
+```
 
-\`\`\`
+Sessions have an expiration time.
 
-Sessions have an expiration time and are removed when invalid or expired.
+The current implementation uses a seven day session lifetime.
 
-**## Ownership checks**
+Logout invalidates the session.
+
+---
+
+# Authorization
+
+Authorization is enforced on the server.
+
+Authentication answers:
+
+```text
+Who is the user?
+```
+
+Authorization answers:
+
+```text
+Is this user allowed to perform this operation?
+```
+
+FlowDesk applies both.
+
+For administrator endpoints:
+
+```text
+requireAuth
+     ↓
+requireRole("ADMIN")
+     ↓
+Controller
+```
+
+Normal users cannot bypass the administrator interface by directly calling the API.
+
+---
+
+# Ownership Checks
 
 Every protected project and task operation uses the authenticated user's ID.
 
 For example:
 
-\`\`\`text
-
+```text
 Project lookup
 
 WHERE id = projectId
-
 AND ownerId = authenticatedUserId
-
-\`\`\`
+```
 
 This prevents one authenticated user from accessing another user's project.
 
@@ -550,740 +796,1039 @@ The same ownership principle is applied to tasks.
 
 Task project assignments are also checked to ensure that the selected project belongs to the authenticated user.
 
-**## Server side validation**
+Notifications are similarly scoped to the authenticated user.
+
+---
+
+# Server Side Validation
 
 Requests are validated using Zod before database operations.
 
 Examples include:
 
-\* Minimum and maximum name lengths
-
-\* Valid email addresses
-
-\* Password length
-
-\* Valid project statuses
-
-\* Valid task statuses
-
-\* Valid task priorities
-
-\* Progress between 0 and 100
-
-\* Valid date formats
-
-\* Required fields
+* Minimum and maximum name lengths
+* Valid email addresses
+* Password requirements
+* Valid project statuses
+* Valid task statuses
+* Valid task priorities
+* Progress between 0 and 100
+* Valid date formats
+* Required fields
+* Valid project and task update fields
 
 Frontend validation is treated as a user experience feature.
 
 The backend remains the source of truth for request validation.
 
-**## HTTP security**
+---
+
+# Workflow Validation
+
+Business rules are enforced by backend services.
+
+Task status transitions are validated before database updates.
+
+For example:
+
+```text
+TODO → IN_PROGRESS
+```
+
+is valid.
+
+```text
+IN_PROGRESS → COMPLETED
+```
+
+is valid.
+
+```text
+COMPLETED → IN_PROGRESS
+```
+
+is valid.
+
+However:
+
+```text
+TODO → COMPLETED
+```
+
+is rejected.
+
+And:
+
+```text
+COMPLETED → TODO
+```
+
+is rejected.
+
+Invalid transitions do not modify the database.
+
+---
+
+# HTTP Security
 
 The API uses:
 
-\* Helmet
+* Helmet
+* CORS configuration
+* Rate limiting
+* HttpOnly cookies
+* Request body limits
+* Server side validation
+* Authentication middleware
+* Role based authorization
 
-\* CORS configuration
+The API applies a JSON request body limit of `1mb`.
 
-\* Rate limiting
+A global API rate limiter is applied to `/api`.
 
-\* HttpOnly cookies
+---
 
-\* Request body limits
+# Environment Variables
 
-\* Server side validation
-
-**---**
-
-**# Environment Variables**
-
-**## Frontend**
+## Frontend
 
 Create:
 
-\`\`\`text
-
+```text
 .env.local
-
-\`\`\`
+```
 
 Example:
 
-\`\`\`env
+```env
+VITE_API_URL=http://localhost:4000/api
+```
 
-VITE\_API\_URL=http\://localhost:4000/api
+The frontend API service uses:
 
-\`\`\`
+```text
+VITE_API_URL
+```
 
-For production, the frontend uses the Vercel API proxy:
+to determine the backend API base URL.
 
-\`\`\`env
+For production, set `VITE_API_URL` to the deployed backend API URL.
 
-VITE\_API\_URL=/api
+Example:
 
-\`\`\`
+```env
+VITE_API_URL=https://your-backend-domain.example.com/api
+```
 
-This keeps frontend API requests on the same origin while Vercel proxies \`/api/*\` requests to the deployed backend.
+Replace the example domain with the actual deployed backend URL.
 
-**## Backend**
+The current Vercel configuration provides SPA routing and does not itself act as an API proxy.
+
+---
+
+## Backend
 
 Create:
 
-\`\`\`text
-
+```text
 server/.env
-
-\`\`\`
+```
 
 Example:
 
-\`\`\`env
-
+```env
 PORT=4000
+CLIENT_URL=http://localhost:5173
+DATABASE_URL=your_postgresql_connection_string
+SESSION_SECRET=your_long_random_session_secret
+```
 
-CLIENT\_URL=http\://localhost:5173
+For production:
 
-DATABASE\_URL=your\_postgresql\_connection\_string
-
-SESSION\_SECRET=your\_long\_random\_session\_secret
-
-\`\`\`
+```env
+PORT=4000
+CLIENT_URL=https://your-frontend-domain.example.com
+DATABASE_URL=your_production_postgresql_connection_string
+SESSION_SECRET=your_long_random_session_secret
+```
 
 Never commit real credentials or secrets.
 
 A safe template is provided in:
 
-\`\`\`text
+```text
+server/.env.example
+```
 
-.env.example
+---
 
-\`\`\`
+# Installation
 
-**---**
+## 1. Clone the Repository
 
-**# Installation**
-
-**## 1. Clone the repository**
-
-\`\`\`bash
-
-git clone https\://github.com/mikeisresilient/flowdesk.git
-
+```bash
+git clone https://github.com/mikeisresilient/flowdesk.git
 cd flowdesk
+```
 
-\`\`\`
+---
 
-**## 2. Install frontend dependencies**
+## 2. Install Frontend Dependencies
 
 From the project root:
 
-\`\`\`bash
-
+```bash
 npm install
+```
 
-\`\`\`
+---
 
-**## 3. Install backend dependencies**
+## 3. Install Backend Dependencies
 
-\`\`\`bash
-
+```bash
 cd server
-
 npm install
+```
 
-\`\`\`
+---
 
-**---**
-
-**# Database Setup**
+# Database Setup
 
 FlowDesk uses PostgreSQL with Prisma.
 
 Configure the database connection in:
 
-\`\`\`text
-
+```text
 server/.env
-
-\`\`\`
+```
 
 Set:
 
-\`\`\`env
+```env
+DATABASE_URL=your_postgresql_connection_string
+```
 
-DATABASE\_URL=your\_postgresql\_connection\_string
+Return to the server directory:
 
-\`\`\`
-
-Then return to the server directory:
-
-\`\`\`bash
-
+```bash
 cd server
-
-\`\`\`
+```
 
 Generate the Prisma client:
 
-\`\`\`bash
-
+```bash
 npx prisma generate
-
-\`\`\`
+```
 
 Apply existing migrations:
 
-\`\`\`bash
-
+```bash
 npx prisma migrate deploy
-
-\`\`\`
+```
 
 For local development where a new migration needs to be created:
 
-\`\`\`bash
-
+```bash
 npx prisma migrate dev
+```
 
-\`\`\`
+---
 
-**---**
-
-**# Running the Application**
+# Running the Application
 
 FlowDesk requires both the frontend and backend servers.
 
-**## Terminal 1: Backend**
+---
 
-\`\`\`bash
+## Terminal 1: Backend
 
+```bash
 cd server
-
 npm run dev
-
-\`\`\`
+```
 
 The API runs on:
 
-\`\`\`text
-
-http\://localhost:4000
-
-\`\`\`
+```text
+http://localhost:4000
+```
 
 Health check:
 
-\`\`\`text
+```text
+http://localhost:4000/api/health
+```
 
-http\://localhost:4000/api/health
+Expected response:
 
-\`\`\`
+```json
+{
+  "success": true,
+  "message": "FlowDesk API is running"
+}
+```
 
-**## Terminal 2: Frontend**
+---
+
+## Terminal 2: Frontend
 
 From the project root:
 
-\`\`\`bash
-
+```bash
 npm run dev
-
-\`\`\`
+```
 
 The frontend runs on:
 
-\`\`\`text
+```text
+http://localhost:5173
+```
 
-http\://localhost:5173
+---
 
-\`\`\`
+# Production Builds
 
-**---**
-
-**# Production Builds**
-
-**## Frontend**
+## Frontend
 
 From the project root:
 
-\`\`\`bash
-
+```bash
 npm run build
+```
 
-\`\`\`
+The production frontend is generated in:
 
-**## Backend**
+```text
+dist/
+```
+
+---
+
+## Backend
 
 From the server directory:
 
-\`\`\`bash
-
+```bash
 npm run build
+```
 
-\`\`\`
+The backend is compiled into:
 
-Start the compiled backend:
+```text
+server/dist/
+```
 
-\`\`\`bash
+Start the compiled backend with:
 
+```bash
 npm start
+```
 
-\`\`\`
+---
 
-**---**
+# Administrator Management
 
-**# Verification**
+FlowDesk includes a backend utility for promoting an existing user to administrator.
+
+From the server directory:
+
+```bash
+npm run promote:admin -- user@example.com
+```
+
+The script:
+
+1. Finds the user by email
+2. Verifies that the user exists
+3. Checks the current role
+4. Updates the role to `ADMIN`
+
+The command does not contain or require a hardcoded password.
+
+---
+
+# Verification
 
 The following workflows were tested during development.
 
-**## Authentication**
+---
 
-\* Registration succeeds with valid data
+## Authentication Verification
 
-\* Duplicate email registration is rejected
+* Registration succeeds with valid data
+* Duplicate email registration is rejected
+* Login succeeds with valid credentials
+* Invalid credentials are rejected
+* Unauthenticated protected requests return `401`
+* `/api/auth/me` rejects unauthenticated requests
+* Authenticated sessions survive page refresh
+* Logout invalidates the session
+* Session cookie uses HttpOnly protection
+* Authentication responses do not expose password hashes or session secrets
 
-\* Login succeeds with valid credentials
+---
 
-\* Invalid credentials are rejected
+# Authorization Verification
 
-\* \`/api/auth/me\` rejects unauthenticated requests
+Administrator authorization was tested directly against the API.
 
-\* Authenticated sessions survive page refresh
+A normal user attempting to access an administrator endpoint receives:
 
-\* Logout invalidates the session
+```text
+403 Forbidden
+```
 
-\* Session cookie uses HttpOnly protection
+An administrator receives a successful response.
 
-**## Projects**
+This confirms that administrator access is enforced server side.
 
-\* Unauthenticated project creation is rejected
+---
 
-\* Authenticated project creation succeeds
+# Ownership Verification
 
-\* Projects persist in PostgreSQL
+The following ownership scenarios were tested:
 
-\* Projects can be retrieved
+* User A cannot read User B's project
+* User A cannot update User B's project
+* User A cannot delete User B's project
+* User A cannot read User B's task
+* User A cannot update User B's task
+* User A cannot delete User B's task
+* User A cannot attach a task to User B's project
+* User A cannot access User B's notifications
 
-\* Projects can be edited
+Ownership violations return a resource not found response where appropriate.
 
-\* Projects can be deleted
+This avoids exposing the existence of resources belonging to another user.
 
-\* Invalid project data is rejected
+---
 
-\* Users cannot access another user's project
+# Project Verification
 
-\* Users cannot modify another user's project
+The following project workflows were tested:
 
-\* Users cannot delete another user's project
+* Unauthenticated project creation is rejected
+* Authenticated project creation succeeds
+* Projects persist in PostgreSQL
+* Projects can be retrieved
+* Projects can be edited
+* Projects can be deleted
+* Invalid project data is rejected
+* Invalid project status is rejected
+* Progress below `0` is rejected
+* Progress above `100` is rejected
+* Users cannot access another user's project
+* Users cannot modify another user's project
+* Users cannot delete another user's project
+* Project creation generates a notification
+* Project status changes generate notifications
 
-**## Tasks**
+---
 
-\* Unauthenticated task creation is rejected
+# Task Verification
 
-\* Authenticated task creation succeeds
+The following task workflows were tested:
 
-\* Tasks persist in PostgreSQL
+* Unauthenticated task creation is rejected
+* Authenticated task creation succeeds
+* Tasks persist in PostgreSQL
+* Tasks can be retrieved
+* Tasks can be edited
+* Tasks can be deleted
+* Invalid task data is rejected
+* Invalid task status is rejected
+* Invalid task priority is rejected
+* Invalid due dates are rejected
+* Tasks persist after browser refresh
+* Edited tasks persist after browser refresh
+* Deleted tasks remain deleted after browser refresh
+* Users cannot access another user's task
+* Users cannot modify another user's task
+* Users cannot delete another user's task
+* Task project assignments are ownership checked
 
-\* Tasks can be retrieved
+---
 
-\* Tasks can be edited
+# Task Workflow Verification
 
-\* Tasks can be deleted
+Valid transitions were tested:
 
-\* Invalid task data is rejected
+```text
+TODO → IN_PROGRESS
+```
 
-\* Tasks persist after browser refresh
+```text
+IN_PROGRESS → COMPLETED
+```
 
-\* Edited tasks persist after browser refresh
+```text
+COMPLETED → IN_PROGRESS
+```
 
-\* Deleted tasks remain deleted after browser refresh
+```text
+IN_PROGRESS → TODO
+```
 
-\* Users cannot access another user's task
+Invalid transitions were also tested:
 
-\* Users cannot modify another user's task
+```text
+TODO → COMPLETED
+```
 
-\* Users cannot delete another user's task
+```text
+COMPLETED → TODO
+```
 
-\* Task project assignments are ownership checked
+Invalid transitions return a validation error and leave the database unchanged.
 
-**## Server side validation**
+---
+
+# Notification Verification
+
+The notification system was tested for:
+
+* Task creation notifications
+* Task status notifications
+* Project creation notifications
+* Project status notifications
+* Mark individual notification as read
+* Mark all notifications as read
+* Delete notification
+* Notification filtering
+* Notification persistence
+* Notification ownership
+* Safe repeated read operations
+* Safe repeated mark all read operations
+* Safe repeated deletion attempts
+
+---
+
+# Dashboard Verification
+
+The dashboard was verified against real backend data.
+
+Tested functionality includes:
+
+* Project statistics
+* Task statistics
+* Project progress
+* Task completion statistics
+* Recent projects
+* Recent activity
+* Loading state
+* Error state
+* Empty state
+* Authentication protection
+
+Dashboard values are retrieved from the authenticated user's database records.
+
+---
+
+# Validation Verification
 
 An invalid task request was tested directly against the API.
 
-Example invalid request:
+Example:
 
-\`\`\`json
-
+```json
 {
-
-  "title": "X"
-
+  "title": "X"
 }
-
-\`\`\`
+```
 
 The API returned:
 
-\`\`\`text
-
+```text
 400 Bad Request
-
-\`\`\`
+```
 
 with:
 
-\`\`\`json
-
+```json
 {
-
-  "success": false,
-
-  "message": "Validation failed"
-
+  "success": false,
+  "message": "Validation failed"
 }
-
-\`\`\`
+```
 
 This demonstrates that validation is enforced by the server rather than relying only on frontend validation.
 
-**---**
+Other validation cases tested include:
 
-**# Current Application State**
+* Missing project name
+* Invalid project status
+* Invalid progress
+* Missing task title
+* Invalid task status
+* Invalid task priority
+* Invalid due date
+* Invalid project ID
+* Invalid task transitions
 
-Task 1 frontend requirements have been implemented.
+---
 
-Task 2 backend integration currently includes:
+# Recovery and Error Handling Verification
 
-\* Real authentication
+Recovery paths were tested for:
 
-\* Database backed sessions
+* Non existent project
+* Non existent task
+* Non existent notification
+* Repeated project deletion
+* Repeated task deletion
+* Repeated notification deletion
+* Repeated notification read
+* Repeated mark all notifications read
+* Malformed JSON
+* Invalid authentication
+* Unauthorized administrator access
+* Invalid workflow transitions
 
-\* PostgreSQL persistence
+The API remains operational after malformed requests and other rejected operations.
 
-\* Prisma ORM
+---
 
-\* User registration
+# Build Verification
 
-\* Login
+Frontend build:
 
-\* Logout
+```bash
+npm run build
+```
 
-\* Session restoration
+Backend build:
 
-\* Project CRUD
+```bash
+cd server
+npm run build
+```
 
-\* Task CRUD
+Both builds were successfully verified during development.
 
-\* Server side validation
+The backend build also generates the Prisma client before TypeScript compilation.
 
-\* Ownership checks
+---
 
-\* Protected API routes
+# Current Application State
 
-\* Frontend API integration
+The application currently includes:
 
-\* Persistent dashboard data
+## Frontend
 
-\* Security middleware
+* Responsive landing page
+* Authentication interface
+* Login
+* Registration
+* Forgot password interface
+* Protected dashboard
+* Project management
+* Task management
+* Calendar
+* Notifications
+* Settings
+* Administrator user management
+* Responsive navigation
+* Loading states
+* Error states
+* Empty states
+* 404 page
+* Accessibility foundation
 
-\* Rate limiting
+## Backend
 
-\* Responsive authenticated interface
+* Express API
+* PostgreSQL database
+* Prisma ORM
+* Prisma migrations
+* User registration
+* Login
+* Logout
+* Database backed sessions
+* HttpOnly session cookies
+* Argon2 password hashing
+* HMAC SHA-256 session token hashing
+* Server side validation
+* Project CRUD
+* Task CRUD
+* Dashboard API
+* Notification API
+* Administrator API
+* Role based authorization
+* Ownership checks
+* Task status transition enforcement
+* Protected API routes
+* Frontend API integration
+* Persistent database data
+* Security middleware
+* Rate limiting
+* Recovery and error handling
 
-**---**
+---
 
-**# Design System**
+# Design System
 
 FlowDesk uses a warm yellow led visual system with neutral surfaces and strong contrast.
 
 Primary tokens:
 
-\`\`\`text
-
-Primary Yellow:  #F5C542
-
-Primary Dark:    #D9A514
-
-Primary Light:   #FFF4C7
-
-Background:      #FAFAF8
-
-Surface:         #FFFFFF
-
-Dark:            #18181B
-
-Text:             #171717
-
-Muted:            #6B7280
-
-Border:           #E5E7EB
-
-Success:          #16A34A
-
-Danger:           #DC2626
-
-Warning:          #CA8A04
-
-\`\`\`
+```text
+Primary Yellow:  #F5C542
+Primary Dark:    #D9A514
+Primary Light:   #FFF4C7
+Background:      #FAFAF8
+Surface:         #FFFFFF
+Dark:            #18181B
+Text:            #171717
+Muted:           #6B7280
+Border:          #E5E7EB
+Success:         #16A34A
+Danger:          #DC2626
+Warning:         #CA8A04
+```
 
 The interface was designed responsively from the beginning for:
 
-\* Mobile phones
+* Mobile phones
+* Tablets
+* Laptops
+* Desktops
+* Large screens
 
-\* Tablets
+---
 
-\* Laptops
-
-\* Desktops
-
-\* Large screens
-
-**---**
-
-**# Accessibility**
+# Accessibility
 
 The application includes accessibility focused practices such as:
 
-\* Semantic HTML
+* Semantic HTML
+* Accessible form labels
+* Screen reader labels
+* ARIA attributes where appropriate
+* Keyboard accessible controls
+* Visible focus indicators
+* Accessible dropdown interactions
+* Progress bar semantics
+* Error states
+* Loading states
+* Empty states
+* Status announcements
+* Touch friendly controls
 
-\* Accessible form labels
+Accessibility is treated as part of the interface implementation rather than a final stage addition.
 
-\* Screen reader labels
+---
 
-\* ARIA attributes where appropriate
+# Development Scripts
 
-\* Keyboard accessible controls
+## Frontend
 
-\* Visible focus indicators
+From the project root:
 
-\* Accessible dropdown interactions
-
-\* Progress bar semantics
-
-\* Error states
-
-\* Loading states
-
-\* Status announcements
-
-**---**
-
-**# Development Scripts**
-
-**## Frontend**
-
-\`\`\`bash
-
+```bash
 npm run dev
-
 npm run build
-
 npm run lint
-
 npm run preview
+```
 
-\`\`\`
+## Backend
 
-**## Backend**
+From the `server` directory:
 
-\`\`\`bash
-
+```bash
 npm run dev
-
 npm run build
-
 npm start
+npm run promote:admin -- user@example.com
+```
 
-\`\`\`
+---
 
-**---**
+# Project Structure
 
-**# Project Structure**
-
-\`\`\`text
-
+```text
 flowdesk/
-
 │
-
 ├── src/
-
-│   ├── components/
-
-│   ├── context/
-
-│   ├── hooks/
-
-│   ├── layouts/
-
-│   ├── pages/
-
-│   ├── routes/
-
-│   ├── services/
-
-│   ├── types/
-
-│   ├── utils/
-
-│   ├── App.tsx
-
-│   ├── main.tsx
-
-│   └── index.css
-
+│   ├── assets/
+│   │
+│   ├── components/
+│   │   ├── common/
+│   │   ├── layout/
+│   │   └── ui/
+│   │
+│   ├── context/
+│   │
+│   ├── hooks/
+│   │
+│   ├── layouts/
+│   │
+│   ├── pages/
+│   │   ├── auth/
+│   │   ├── dashboard/
+│   │   └── public/
+│   │
+│   ├── routes/
+│   │
+│   ├── services/
+│   │
+│   ├── types/
+│   │
+│   ├── utils/
+│   │
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
 │
-
 ├── server/
-
-│   ├── prisma/
-
-│   │   ├── migrations/
-
-│   │   └── schema.prisma
-
-│   │
-
-│   ├── src/
-
-│   │   ├── config/
-
-│   │   ├── controllers/
-
-│   │   ├── middleware/
-
-│   │   ├── routes/
-
-│   │   ├── schemas/
-
-│   │   ├── services/
-
-│   │   ├── types/
-
-│   │   └── server.ts
-
-│   │
-
-│   ├── .env.example
-
-│   ├── package.json
-
-│   ├── prisma.config.ts
-
-│   └── tsconfig.json
-
+│   ├── prisma/
+│   │   ├── migrations/
+│   │   └── schema.prisma
+│   │
+│   ├── src/
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── middleware/
+│   │   ├── routes/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   ├── types/
+│   │   └── server.ts
+│   │
+│   ├── .env.example
+│   ├── package.json
+│   ├── prisma.config.ts
+│   └── tsconfig.json
 │
-
 ├── .env.example
-
 ├── .gitignore
-
 ├── package.json
-
 └── README.md
+```
 
-\`\`\`
+---
 
-**---**
+# Deployment
 
-**# Submission Checklist**
+FlowDesk uses a separated frontend and backend deployment model.
 
-**## Task 1**
+## Frontend
 
-\* [x] Responsive web application
+The React frontend can be deployed as a Vite application to a static hosting platform such as Vercel.
 
-\* [x] Multi page interface
+The production frontend must have:
 
-\* [x] Public views
+```env
+VITE_API_URL=https://your-backend-domain.example.com/api
+```
 
-\* [x] Authenticated views
+configured in the deployment environment.
 
-\* [x] Protected dashboard routes
+The Vercel SPA rewrite ensures that frontend routes such as:
 
-\* [x] Login
+```text
+/dashboard
+/dashboard/projects
+/dashboard/tasks
+```
 
-\* [x] Registration
+resolve correctly when directly accessed.
 
-\* [x] Password recovery interface
+---
 
-\* [x] Dashboard
+## Backend
 
-\* [x] Projects
+The Express backend can be deployed to a Node compatible hosting platform.
 
-\* [x] Tasks
+The backend requires:
 
-\* [x] Calendar
+```env
+PORT
+CLIENT_URL
+DATABASE_URL
+SESSION_SECRET
+```
 
-\* [x] Notifications
+The production `CLIENT_URL` must match the deployed frontend origin.
 
-\* [x] Settings
+---
 
-\* [x] Responsive navigation
+## Database
 
-\* [x] Loading states
+The production database uses PostgreSQL.
 
-\* [x] Error states
+Neon PostgreSQL can be used as the hosted PostgreSQL provider.
 
-\* [x] Empty states
+Prisma migrations should be applied during deployment:
 
-\* [x] 404 page
+```bash
+npx prisma migrate deploy
+```
 
-\* [x] Accessibility foundation
+The production database connection string must never be committed to Git.
 
-**## Task 2**
+---
 
-\* [x] Backend API
+# Production Security Considerations
 
-\* [x] PostgreSQL database
+Before public production use, the following should be verified against the actual deployed domains:
 
-\* [x] Prisma schema
+* Frontend can reach the deployed backend
+* Backend CORS allows only the intended frontend origin
+* Authentication cookies are delivered correctly
+* Authentication survives page refresh
+* Logout invalidates the session
+* Protected routes remain protected
+* Administrator routes remain protected
+* Ownership checks work against production data
+* Production database credentials are stored as environment variables
+* `SESSION_SECRET` is a strong random value
+* No `.env` files are committed
+* API health endpoint responds correctly
+* Production frontend uses the deployed API URL
 
-\* [x] Prisma migrations
+Cross origin authentication behavior should be explicitly tested when frontend and backend are hosted on different domains.
 
-\* [x] User registration
+---
 
-\* [x] Login
+# Known Limitations
 
-\* [x] Logout
+The following areas are intentionally limited in the current implementation:
 
-\* [x] Database backed sessions
+* The Forgot Password page is currently an interface and does not implement a complete email based password reset workflow.
+* Calendar functionality is based on task due dates rather than a separate event management subsystem.
+* There is no real time WebSocket notification delivery.
+* Notifications are generated as part of successful backend operations and retrieved through the notification API.
+* The application does not currently include file attachments.
+* The application does not currently include team or multi member project collaboration.
+* The application does not currently include email notification delivery.
+* Production authentication should be tested end to end after the frontend and backend are deployed to their final domains.
 
-\* [x] HttpOnly session cookie
+---
 
-\* [x] Server side validation
+# Submission Checklist
 
-\* [x] Projects CRUD
+## Task 1
 
-\* [x] Tasks CRUD
+* [x] Responsive web application
+* [x] Multi page interface
+* [x] Public views
+* [x] Authenticated views
+* [x] Protected dashboard routes
+* [x] Login
+* [x] Registration
+* [x] Password recovery interface
+* [x] Dashboard
+* [x] Projects
+* [x] Tasks
+* [x] Calendar
+* [x] Notifications
+* [x] Settings
+* [x] Responsive navigation
+* [x] Loading states
+* [x] Error states
+* [x] Empty states
+* [x] 404 page
+* [x] Accessibility foundation
+* [x] Responsive mobile layouts
+* [x] Responsive tablet layouts
+* [x] Responsive desktop layouts
 
-\* [x] Ownership checks
+## Task 2
 
-\* [x] Protected API routes
+* [x] Backend API
+* [x] PostgreSQL database
+* [x] Prisma schema
+* [x] Prisma migrations
+* [x] User registration
+* [x] Login
+* [x] Logout
+* [x] Database backed sessions
+* [x] HttpOnly session cookie
+* [x] Argon2 password hashing
+* [x] HMAC SHA-256 session token hashing
+* [x] Server side validation
+* [x] Projects CRUD
+* [x] Tasks CRUD
+* [x] Dashboard API
+* [x] Notification API
+* [x] Admin API
+* [x] User roles
+* [x] Server side role authorization
+* [x] Ownership checks
+* [x] Protected API routes
+* [x] Frontend API integration
+* [x] Persistent data
+* [x] Task status workflow validation
+* [x] Automatic project notifications
+* [x] Automatic task notifications
+* [x] Security middleware
+* [x] Rate limiting
+* [x] Request body limits
+* [x] Frontend build verified
+* [x] Backend build verified
+* [x] Authentication verified
+* [x] Authorization verified
+* [x] CRUD workflows verified
+* [x] Ownership verified
+* [x] Validation verified
+* [x] Persistence verified
+* [x] Recovery paths verified
 
-\* [x] Frontend API integration
+## Deployment
 
-\* [x] Persistent data
+* [x] Frontend production build configured
+* [x] Backend production build configured
+* [x] SPA routing configured
+* [ ] Final production frontend API URL configured
+* [ ] Final production CORS origin verified
+* [ ] Final production authentication flow verified
+* [ ] Final production role authorization verified
+* [ ] Final production database workflow verified
 
-\* [x] Security middleware
+---
 
-\* [x] Rate limiting
+# Final Project Summary
 
-\* [x] Frontend build verified
+FlowDesk demonstrates an end to end full stack application workflow:
 
-\* [x] Backend build verified
+```text
+User
+ │
+ ▼
+React Frontend
+ │
+ │ HTTP Request
+ ▼
+Express API
+ │
+ ├── Authentication
+ ├── Authorization
+ ├── Role Checks
+ ├── Validation
+ ├── Ownership Checks
+ ├── Workflow Rules
+ │
+ ▼
+Prisma ORM
+ │
+ ▼
+PostgreSQL
+ │
+ ▼
+Persistent Application Data
+```
 
-\* [x] Authentication verified
+The application is designed to demonstrate not only frontend implementation, but also secure backend request handling, database persistence, authentication, authorization, ownership enforcement, validation, business workflow rules, notifications, responsive design, and deployment readiness.
 
-\* [x] CRUD workflows verified
+---
 
-\* [x] Validation verified
-
-\* [x] Persistence verified
-
-**---**
-
-**# Author**
+# Author
 
 Built as a full stack application project for an internship submission.
 
-\`\`\`
+GitHub:
+
+```text
+https://github.com/mikeisresilient/flowdesk
+```
